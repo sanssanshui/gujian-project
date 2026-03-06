@@ -11,16 +11,25 @@ const PORT = process.env.PORT || 3000;
 // 中间件
 app.use(cors());
 app.use(express.json());
-// 核心：正确托管public文件夹的静态资源，__dirname确保路径绝对正确
-app.use(express.static(path.join(__dirname, 'public')));
+// 静态资源托管，关闭默认index，让自定义路由兜底
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false,
+  dotfiles: 'ignore'
+}));
 
 // 通义千问API配置
 const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY;
 const MODEL_NAME = 'qwen-turbo';
 
-// 根路径兜底：防止静态托管失效，直接返回index.html
+// 根路径兜底：强制返回index.html，添加错误捕获
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('首页加载失败：', err);
+      res.status(404).send('首页文件不存在，请检查public/index.html路径');
+    }
+  });
 });
 
 // AI聊天接口
@@ -29,6 +38,12 @@ app.post('/api/ai-chat', async (req, res) => {
     const { messages } = req.body;
     if(!messages || !Array.isArray(messages)){
       return res.status(400).json({ error: '消息格式错误' });
+    }
+
+    // 校验API密钥是否配置
+    if (!DASHSCOPE_API_KEY) {
+      console.error('DASHSCOPE_API_KEY 环境变量未配置');
+      return res.status(500).json({ error: 'API密钥未配置，请在Vercel后台添加环境变量' });
     }
 
     // 消息清洗校验
@@ -92,17 +107,22 @@ app.post('/api/ai-chat', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('接口调用失败', error);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ error: '服务器内部错误，请查看运行日志' });
   }
 });
 
 // 404兜底
 app.use('*', (req, res) => {
-  res.status(404).send('页面不存在，请检查路径');
+  res.status(404).send(`页面不存在，您访问的路径：${req.originalUrl}`);
 });
 
-// 启动服务
-app.listen(PORT, () => {
-  console.log(`✅ 服务已成功启动！`);
-  console.log(`🌐 本地访问地址：http://localhost:${PORT}`);
-});
+// 关键：仅本地环境启动监听，Vercel环境直接导出app（适配Serverless）
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅ 服务已成功启动！`);
+    console.log(`🌐 本地访问地址：http://localhost:${PORT}`);
+  });
+} else {
+  // Vercel Serverless 必须导出app
+  module.exports = app;
+}
