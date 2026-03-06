@@ -1,0 +1,3531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榫卯·斗拱·拱券 - 中国古代建筑力学智慧</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ========== 核心修改1：body背景图全局生效 ========== */
+        body { 
+            font-family: 'Noto Serif SC', 'SimSun', serif; 
+            background: #F5F3EE; 
+            min-height: 100vh; 
+            color: #3E4142; 
+            position: relative;
+        }
+        /* 全局背景图，覆盖header以外的所有区域，不影响原有功能 */
+       body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 改为相对路径，指向同目录下的背景图片文件夹 */
+    background-image: url('背景图片/1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    opacity: 0.18; /* 可自行调整不透明度 */
+    pointer-events: none;
+    z-index: 0;
+}
+        
+       /* 合并后的header核心样式（解决高度不足+内容居中问题） */
+.header { 
+    color: #F5F3EE; 
+    padding: 80px 20px; /* 上下内边距加大，可自行调整 */
+    min-height: 500px; /* 核心：设置最小高度，数值越大壁纸区域越高，可自定义400/600px */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center; 
+    position: relative; 
+    overflow: hidden; 
+}
+/* 头部遮罩层，原有样式保留 */
+.header::before { 
+    content: ''; 
+    position: absolute; 
+    inset: 0; 
+    background: rgba(44,74,82,0.6); 
+    z-index: 1;
+}
+/* 底部渐变过渡，适配更高的header */
+.header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100px; /* 渐变高度，可自行调整 */
+    background: linear-gradient(to bottom, transparent 0%, #F5F3EE 100%);
+    z-index: 3;
+    pointer-events: none;
+}
+/* 原有header内的文字样式，保留并补充层级 */
+.header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; position: relative; z-index: 2; }
+.header .subtitle { font-size: 1.3rem; color: #c4d4ce; margin-bottom: 20px; position: relative; z-index: 2; }
+.header .quote { max-width: 700px; margin: 0 auto; font-style: italic; color: #b8c4be; border-left: 4px solid #c8553d; padding-left: 15px; text-align: left; position: relative; z-index: 2; }
+.header-particle-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+/* ========== 【重写】头部左右翻页轮播样式 ========== */
+/* 轮播外层容器：撑满整个header，层级在最底部 */
+.header-carousel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    background-color: #2c4a52; /* 图片加载失败兜底背景 */
+}
+/* 轮播轨道：横向排列，切换时平滑过渡 */
+.header-carousel-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s ease-in-out; /* 翻页平滑动画 */
+}
+/* 单张轮播项：宽度100%，占满整个轮播容器 */
+.header-carousel-slide {
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+}
+/* 轮播图片：解决比例问题，不变形，完整展示 */
+.header-carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 保持图片比例，覆盖容器，不变形 */
+    object-position: center center; /* 图片居中，重点内容不裁切 */
+    display: block;
+}
+
+/* 轮播左右翻页按钮 */
+.header-carousel .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.header-carousel .carousel-btn:hover {
+    background: rgba(200,85,61,0.8);
+    border-color: rgba(200,85,61,1);
+}
+.header-carousel .carousel-prev {
+    left: 20px;
+}
+.header-carousel .carousel-next {
+    right: 20px;
+}
+
+/* 轮播底部指示器（小圆点） */
+.carousel-indicators {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 2;
+}
+.carousel-indicators .indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    padding: 0;
+}
+.carousel-indicators .indicator-dot.active {
+    background: #fff;
+    width: 30px;
+    border-radius: 5px;
+}
+        /* 建筑统计模块：初始仅总数卡片居中，分类默认隐藏；点击后整体左滑展开 */
+        .stats { 
+            display: grid; 
+            grid-template-columns: minmax(150px, 200px) 0fr 0fr 0fr 0fr; 
+            gap: 15px; 
+            max-width: 220px; 
+            margin: -30px auto 30px; 
+            padding: 0 20px; 
+            position: relative; 
+            z-index: 10; 
+            transition: margin 0.65s ease, max-width 0.65s ease, grid-template-columns 0.65s ease;
+        }
+        .stats.stats-expanded {
+            grid-template-columns: repeat(5, minmax(150px, 1fr)); 
+            max-width: 1000px; 
+            margin: -30px auto 30px; /* 展开后整体仍水平居中 */
+        }
+        .stat-card { 
+            background: #F5F3EE; 
+            border: 1px solid #9c7b5c; 
+            border-radius: 12px; 
+            padding: 20px; 
+            text-align: center; 
+            box-shadow: 0 4px 6px -1px rgba(44,74,82,0.1);
+            transition: transform 0.6s ease, box-shadow 0.6s ease, opacity 0.6s ease; 
+            position: relative; 
+            z-index: 1; 
+        }
+        .stat-card:hover { 
+            transform: translateY(-4px); 
+            border-color: #c8553d; 
+            box-shadow: 0 6px 12px -2px rgba(44,74,82,0.25);
+        }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #2c4a52; }
+        .stat-card .label { font-size: 0.9rem; color: #5a7a8a; }
+
+        /* 建筑统计模块 - 总数卡片：深色样式 + 进入时平滑出现（无闪烁） */
+        .stat-card--total {
+            background: linear-gradient(135deg, #1f2f38 0%, #374b4f 45%, #5b4630 100%);
+            border-color: rgba(240, 230, 210, 0.4);
+            color: #F5F3EE;
+            cursor: pointer;
+            transform: translateY(18px);
+            opacity: 0;
+        }
+        .stat-card--total .number { color: #f8e7c2; }
+        .stat-card--total .label { color: #e2d6bf; }
+        .stat-card--total::after {
+            content: '点击展开 / 收起明细';
+            display: block;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: rgba(245,243,238,0.8);
+        }
+        .stats.stats-anim-ready .stat-card--total {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 建筑统计模块 - 分类卡片：默认隐藏（0fr 列内），展开时平滑显示 */
+        .stat-card--child {
+            overflow: hidden;
+            opacity: 0;
+            min-width: 0;
+            transition: opacity 0.6s ease;
+        }
+        .stats.stats-expanded .stat-card--child {
+            opacity: 1;
+        }
+        
+        .tabs { max-width: 1400px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 24px; border: 1px solid #9c7b5c; background: #fcf9f4; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500; color: #2c4a52; transition: all 0.2s; }
+        .tab-btn:hover { background: rgba(168,88,74,0.1); border-color: #c8553d; color: #c8553d; }
+        .tab-btn.active { background: #2c4a52; color: #fcf9f4; border-color: #2c4a52; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .card { background: linear-gradient(165deg, #fcf9f4 0%, #f6f1e8 100%); border: 1px solid #9c7b5c; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(44,74,82,0.1); margin-bottom: 20px; overflow: hidden; position: relative; z-index: 1; }
+        .card-header { padding: 20px; border-bottom: 1px solid rgba(156,123,92,0.25); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .card-title { font-size: 1.2rem; font-weight: 600; color: #2c4a52; margin-bottom: 5px; font-family: 'ZCOOL XiaoWei', serif; }
+        .card-desc { font-size: 0.9rem; color: #5a7a8a; }
+        .card-body { padding: 20px; }
+        
+        .filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+        .filter-group label { display: block; font-size: 0.85rem; font-weight: 500; color: #2c4a52; margin-bottom: 5px; }
+        .filter-group select { padding: 8px 12px; border: 1px solid #9c7b5c; background: #fcf9f4; border-radius: 6px; font-size: 0.9rem; min-width: 120px; color: #2c4a52; }
+        .filter-group select:focus { outline: 2px solid #c8553d; border-color: transparent; }
+        
+        :root {
+            --gu-daiqing: #2c4a52;
+            --gu-shiqing: #5a7a8a;
+            --gu-zheshi: #8B7355;
+            --gu-zhusha: #c8553d;
+        }
+        
+        .timeline-guide { text-align: center; font-size: 0.95rem; color: #5a7a8a; margin-bottom: 20px; }
+        .custom-timeline { width: 100%; padding: 0 10px; }
+        .timeline-track { position: relative; height: 60px; margin-bottom: 25px; }
+        #dynasty-slider {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+            background: linear-gradient(to right, #8B7355, #A68B6B); border-radius: 4px;
+            position: absolute; top: 25px; left: 0; outline: none; z-index: 2;
+        }
+        #dynasty-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
+            background: linear-gradient(135deg, #D4B58C 0%, #A68B6B 100%); border-radius: 50%;
+            border: 3px solid #f0e6d2; box-shadow: 0 2px 8px rgba(44,74,82,0.3); cursor: pointer;
+        }
+        #dynasty-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .timeline-markers {
+            display: flex; justify-content: space-between; position: absolute; top: 45px; left: 0; width: 100%; z-index: 1;
+        }
+        .timeline-markers .marker {
+            font-family: 'Noto Serif SC', serif; font-size: 1rem; color: #2c4a52;
+            position: relative; width: 30px; text-align: center; cursor: pointer;
+        }
+        .timeline-markers .marker::before {
+            content: ''; position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
+            border-top: 8px solid #8B7355;
+        }
+        .timeline-markers .marker.active { color: #c8553d; font-weight: bold; }
+        .timeline-markers .marker.active::before { border-top-color: #c8553d; }
+        .dynasty-summary-card {
+            background: linear-gradient(165deg, #fcf9f4 0%, #f6f1e8 100%);
+            border: 1px solid #8B7355; border-radius: 10px; padding: 15px 20px;
+        }
+        .dynasty-summary-card h4 { font-family: 'ZCOOL XiaoWei', serif; color: #2c4a52; margin-bottom: 8px; }
+        .dynasty-summary-card p { color: #5a7a8a; line-height: 1.6; }
+        
+        #map { height: 500px; border-radius: 8px; border: 1px solid #8B7355; }
+        
+        .building-list { max-height: 500px; overflow-y: auto; }
+        .building-item { padding: 12px; border-bottom: 1px solid rgba(156,123,92,0.2); cursor: pointer; transition: background 0.2s; }
+        .building-item:hover { background: linear-gradient(90deg, rgba(139,115,85,0.08) 0%, rgba(245,240,230,0.5) 100%); }
+        .building-item h4 { font-weight: 600; color: #2c4a52; margin-bottom: 3px; }
+        .building-item .meta { font-size: 0.8rem; color: #5a7a8a; }
+        .building-item .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; color: #F5F3EE; }
+        .badge-sunmao { background: #997A5B; }
+        .badge-dougong { background: #50768E; }
+        .badge-gongquan { background: #B4463C; }
+        
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th, .data-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(156,123,92,0.25); }
+        .data-table th { background: rgba(139,115,85,0.06); font-weight: 600; color: #2c4a52; }
+        .data-table tr:hover { background: rgba(139,115,85,0.06); }
+        
+        .slider-group { margin-bottom: 20px; }
+        .slider-group label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 500; color: #2c4a52; }
+        .slider-group input[type="range"] { width: 100%; accent-color: #c8553d; }
+        
+        .gauge-row { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+        .gauge-item { flex: 1; min-width: 120px; background: rgba(139,115,85,0.08); border-radius: 10px; padding: 10px; text-align: center; border: 1px solid rgba(156,123,92,0.2); }
+        .gauge-item canvas { max-height: 100px; width: 100% !important; }
+        
+        .stress-bars { display: flex; gap: 4px; justify-content: center; align-items: flex-end; height: 120px; margin-top: 10px; }
+        .stress-bar { width: 30px; background: #50768E; border-radius: 4px 4px 0 0; transition: height 0.15s; position: relative; }
+        .stress-bar::after { content: attr(data-label); position: absolute; top: -18px; left: 0; right: 0; font-size: 10px; color: #2c4a52; }
+        
+        .sunmao-type { background: linear-gradient(135deg, rgba(139,115,85,0.08) 0%, rgba(156,123,92,0.12) 100%); border-radius: 8px; padding: 12px; margin-bottom: 8px; border: 1px solid rgba(156,123,92,0.2); }
+        .sunmao-type h4 { font-weight: 600; color: #2c4a52; margin-bottom: 4px; }
+        .sunmao-type p { font-size: 0.8rem; color: #5a7a8a; }
+        
+        .footer { background: linear-gradient(180deg, #3d524a 0%, #2c4a52 100%); color: #F5F3EE; padding: 40px 20px; margin-top: 40px; position: relative; z-index: 1; }
+        .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; }
+        .footer h3 { color: #F5F3EE; font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid rgba(245,243,238,0.3); padding-bottom: 5px; }
+        .footer p { color: #E0E1DF; }
+        .marker-dot {
+            display: block;
+            border-radius: 50%;
+            border: 2px solid #d7c9a7; 
+            box-sizing: border-box;
+        }
+
+        .building-marker-icon {
+            border-radius: 50%;
+            border: 2px solid rgba(0,0,0,0.85); /* 仅放大后自定义图标使用深色描边 */
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F5F3EE;
+        }
+
+        .building-marker-dot {
+            border-radius: 50%;
+            border: none; 
+            box-sizing: border-box;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .building-marker-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .map-legend {
+            position: absolute; top: 10px; left: 10px; z-index: 1000;
+            background: rgba(255,255,255,0.95); border: 1px solid #8B7355; border-radius: 8px; padding: 10px 14px; font-size: 13px;
+        }
+        .map-legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .map-legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+        .map-legend-dot.dougong { background: #50768E; }
+        .map-legend-dot.sunmao { background: #997A5B; }
+        .map-legend-dot.gongquan { background: #B4463C; }
+        .map-hint {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 1000;
+            font-size: 12px; color: #5F6264; background: rgba(255,255,255,0.92); padding: 8px 12px; border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+        
+        .building-detail-popup .popup-name { font-weight: 600; color: #2c4a52; margin-bottom: 6px; }
+        .building-detail-popup .popup-structure { font-size: 12px; color: #5a7a8a; margin-bottom: 8px; }
+        .building-detail-popup .popup-desc { font-size: 13px; color: #3E4142; line-height: 1.5; margin-bottom: 12px; }
+        .building-detail-popup .btn-3d { display: inline-block; padding: 8px 16px; background: #50768E; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        .building-detail-popup .btn-3d:hover { background: #3d5a6c; }
+        
+       /* 弹窗图片轮播 - 左右箭头固定在展示框内 */
+.popup-carousel {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 180px;
+    margin: 12px 0;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden; /* 防止内容溢出展示框 */
+}
+
+.popup-carousel .carousel-btn {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(224,225,223,0.6);
+    background: rgba(245,243,238,0.85); /* 半透明背景，不遮挡图片 */
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    color: #2c4a52;
+    transition: all 0.2s;
+    z-index: 20; /* 保证箭头在图片上层，可正常点击 */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 左箭头：固定在展示框内部左侧 */
+.popup-carousel .carousel-prev {
+    left: 10px;
+}
+
+/* 右箭头：固定在展示框内部右侧 */
+.popup-carousel .carousel-next {
+    right: 10px;
+}
+
+.popup-carousel .carousel-btn:hover {
+    background: #50768E;
+    color: #fff;
+    border-color: #50768E;
+}
+
+.popup-carousel .carousel-img-wrap {
+    width: 100%;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.04);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0 50px; /* 左右内边距，避免图片被箭头遮挡 */
+    box-sizing: border-box;
+}
+
+.popup-carousel .carousel-img-wrap img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 4px;
+    display: block;
+}
+
+/* 小屏幕适配，保持箭头在内部，间距适配 */
+@media (max-width: 768px) {
+    .popup-carousel .carousel-prev {
+        left: 8px;
+    }
+    .popup-carousel .carousel-next {
+        right: 8px;
+    }
+    .popup-carousel .carousel-img-wrap {
+        padding: 0 45px;
+        max-width: 100%;
+    }
+}
+
+      /* ========== 3D 模型查看页样式 ========== */
+.viewer3d-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(160deg, #0d1117 0%, #1a2332 40%, #0f1419 100%);
+    display: none;
+}
+.viewer3d-canvas-wrap {
+    position: absolute; inset: 0;
+    z-index: 1;
+}
+.viewer3d-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+.viewer3d-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 10px 16px;
+    background: rgba(30,58,95,0.92);
+    border-bottom: 1px solid rgba(184,134,11,0.4);
+    color: #F5F0E6;
+}
+.viewer3d-title { font-size: 16px; font-weight: 600; font-family: 'Noto Serif SC', serif; }
+.viewer3d-close-btn {
+    position: absolute; right: 12px; top: 10px;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid rgba(245,240,230,0.7);
+    background: rgba(15,20,25,0.9);
+    color: #F5F0E6; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+.viewer3d-close-btn:hover { background: rgba(184,70,60,0.9); }
+.viewer3d-toolbar {
+    position: absolute; top: 46px; left: 0; right: 0; z-index: 10;
+    padding: 8px 16px;
+    background: rgba(26,26,26,0.88);
+    border-bottom: 1px solid rgba(184,134,11,0.25);
+    display: flex; gap: 10px; align-items: center;
+}
+.viewer3d-toolbar button {
+    padding: 8px 18px; background: #8B2500; color: #F5F0E6;
+    border: 1px solid rgba(184,134,11,0.5); border-radius: 6px; cursor: pointer;
+    font-size: 14px; font-weight: 600; min-width: 80px;
+}
+.viewer3d-toolbar button:hover { background: #a52a2a; }
+.viewer3d-type-bar {
+    position: absolute; top: 90px; left: 0; right: 0; z-index: 10;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 6px 16px; background: rgba(26,26,26,0.85);
+    border-bottom: 1px solid rgba(184,134,11,0.2);
+}
+.viewer3d-type-bar label { color: #B8860B; font-size: 12px; }
+.viewer3d-type-btn {
+    padding: 5px 12px; background: rgba(30,58,95,0.6); color: #F5F0E6;
+    border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; cursor: pointer;
+    font-size: 12px;
+}
+.viewer3d-type-btn:hover { background: rgba(139,37,0,0.4); }
+.viewer3d-type-btn.active { background: #8B2500; border-color: #B8860B; }
+.viewer3d-slider-wrap { display: flex; align-items: center; gap: 8px; }
+.viewer3d-slider-wrap input[type="range"] { width: 100px; accent-color: #B8860B; }
+.viewer3d-bottom-panel {
+    position: absolute; bottom: 12px; right: 12px; z-index: 10;
+    width: 260px; max-height: 200px; overflow: auto;
+    padding: 10px; background: rgba(26,26,26,0.94);
+    border: 1px solid rgba(184,134,11,0.4); border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+}
+.viewer3d-minimap-card { background: rgba(15,20,25,0.95); border-radius: 8px; padding: 8px; border: 1px solid rgba(184,134,11,0.35); }
+.viewer3d-minimap-card h4 { font-size: 11px; color: #B8860B; margin-bottom: 6px; }
+#viewer3d-minimap { height: 100px !important; min-height: 90px; border-radius: 6px; }
+.viewer3d-chart-box { background: rgba(15,20,25,0.95); border-radius: 8px; padding: 8px; border: 1px solid rgba(184,134,11,0.35); margin-bottom: 8px; }
+.viewer3d-chart-box h4 { font-size: 11px; color: #B8860B; margin-bottom: 4px; }
+.viewer3d-rep-buildings { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.viewer3d-rep-btn { padding: 5px 10px; background: rgba(30,58,95,0.6); color: #F5F0E6; border: 1px solid rgba(184,134,11,0.4); border-radius: 6px; cursor: pointer; font-size: 11px; }
+.viewer3d-rep-btn:hover { background: #8B2500; }
+.viewer3d-tooltip {
+    position: fixed; padding: 8px 12px; background: rgba(30,58,95,0.96); color: #F5F0E6;
+    border-radius: 6px; font-size: 12px; max-width: 260px; pointer-events: none;
+    z-index: 10000; display: none; border: 1px solid #B8860B;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.viewer3d-tooltip .tt-name { font-weight: 600; margin-bottom: 4px; }
+.viewer3d-compare-panel {
+    position: absolute; top: 130px; right: 12px; z-index: 10;
+    width: 280px; max-height: calc(100vh - 160px); overflow: auto;
+    padding: 10px; background: rgba(26,26,26,0.94);
+    border: 1px solid rgba(184,134,11,0.4); border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+}
+.viewer3d-compare-panel h4 { font-size: 12px; color: #B8860B; margin-bottom: 8px; }
+.viewer3d-compare-table { width: 100%; border-collapse: collapse; font-size: 10px; color: #F5F0E6; }
+.viewer3d-compare-table th, .viewer3d-compare-table td { padding: 5px 6px; text-align: left; border-bottom: 1px solid rgba(184,134,11,0.25); }
+.viewer3d-compare-table th { color: #B8860B; }
+        
+        .chart-container { margin-top: 20px; background: rgba(139,115,85,0.06); border-radius: 8px; padding: 15px; }
+        .chart-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .chart-item { flex: 1; min-width: 250px; }
+
+        
+        .dynasty-insight { display: flex; gap: 12px; margin-bottom: 14px; }
+        .dynasty-insight .dynasty-item {
+            flex: 1; background: linear-gradient(165deg, #fcf9f4 0%, #f6f1e8 100%);
+            border: 1px solid #8B7355; border-radius: 10px; padding: 12px; color: #2c4a52; box-shadow: 0 4px 6px -1px rgba(44,74,82,0.06);
+            min-width: 0;
+        }
+        .dynasty-insight .dynasty-item h5 { font-family: 'ZCOOL XiaoWei', serif; color: #2c4a52; margin: 0 0 6px 0; font-size: 0.95rem; }
+        .dynasty-insight .dynasty-item p { margin: 0; color: #5a7a8a; line-height: 1.5; font-size: 0.9rem; }
+        
+        .fun-fact-card {
+            background: linear-gradient(135deg, rgba(139,115,85,0.1) 0%, rgba(200,85,61,0.1) 100%);
+            border-left: 4px solid #c8553d; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+            cursor: pointer; transition: all 0.3s; position: relative; z-index: 1;
+        }
+        .fun-fact-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(44,74,82,0.15); }
+        .fun-fact-card h4 { color: #c8553d; font-size: 1rem; margin-bottom: 8px; }
+        .fun-fact-card p { color: #2c4a52; line-height: 1.6; }
+        .fun-fact-refresh { text-align: right; font-size: 0.8rem; color: #5a7a8a; margin-top: 8px; }
+        
+        .interactive-tip { background: rgba(44,74,82,0.1); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: #2c4a52; }
+
+        /* ========== 知识问答模块样式 - 新增开始 ========== */
+.quiz-module-wrap {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+.quiz-card {
+    background: linear-gradient(135deg, rgba(139,115,85,0.1) 0%, rgba(44,74,82,0.1) 100%);
+    border-left: 4px solid var(--gu-daiqing);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.quiz-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(44,74,82,0.15);
+}
+.quiz-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.quiz-header h4 {
+    color: var(--gu-daiqing);
+    font-size: 1rem;
+    margin: 0;
+    font-family: 'ZCOOL XiaoWei', serif;
+}
+.quiz-toggle {
+    font-size: 0.8rem;
+    color: var(--gu-shiqing);
+}
+.quiz-panel {
+    padding: 0 20px 20px;
+    border-top: 1px solid rgba(139,115,85,0.2);
+}
+.quiz-question {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gu-daiqing);
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.quiz-option {
+    padding: 10px 15px;
+    border: 1px solid rgba(139,115,85,0.3);
+    background: #fcf9f4;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    color: #3E4142;
+}
+.quiz-option:hover:not(.answered) {
+    border-color: var(--gu-daiqing);
+    background: rgba(44,74,82,0.05);
+}
+.quiz-option.correct {
+    border-color: #2e7d32;
+    background: rgba(46,125,50,0.1);
+    color: #2e7d32;
+    font-weight: 500;
+}
+.quiz-option.wrong {
+    border-color: var(--gu-zhusha);
+    background: rgba(200,85,61,0.1);
+    color: var(--gu-zhusha);
+}
+.quiz-option.answered {
+    cursor: not-allowed;
+}
+.quiz-result {
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    background: rgba(44,74,82,0.06);
+    border-left: 3px solid var(--gu-daiqing);
+    font-size: 0.9rem;
+    color: var(--gu-shiqing);
+    line-height: 1.5;
+}
+.quiz-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.quiz-btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--gu-daiqing);
+    background: #fcf9f4;
+    color: var(--gu-daiqing);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: 'Noto Serif SC', serif;
+    transition: all 0.2s ease;
+}
+.quiz-btn:hover:not(:disabled) {
+    background: var(--gu-daiqing);
+    color: #fff;
+}
+.quiz-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #ccc;
+}
+.quiz-btn.quiz-random {
+    border-color: var(--gu-zhusha);
+    color: var(--gu-zhusha);
+}
+.quiz-btn.quiz-random:hover:not(:disabled) {
+    background: var(--gu-zhusha);
+    color: #fff;
+}
+/* ========== 知识问答模块样式 - 新增结束 ========== */
+        /* ========== 新增：小字注解与浮动提示样式 ========== */
+        .small-gray-note { color: #888888; font-size: 0.85rem; margin-top: 6px; }
+        .small-gray-note.inline { font-size: 0.85rem; }
+        .float-tip { position: fixed; padding: 6px 10px; background: rgba(255,255,255,0.96); color: #888888; border-radius: 6px; border: 1px solid #e6e6e6; font-size: 0.85rem; pointer-events: none; z-index: 99999; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: none; }
+        /* ========== 新增结束 ========== */
+    </style>
+</head>
+<body>
+ <header class="header">
+    <!-- 头部背景轮播容器（左右翻页版） -->
+    <div class="header-carousel">
+        <div class="header-carousel-track">
+            <!-- 仅保留一组轮播图片，删除重复的第二组 -->
+            <div class="header-carousel-slide"><img src="./首页壁纸/1.jpg" alt="古建壁纸1"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/2.jpg" alt="古建壁纸2"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/3.jpg" alt="古建壁纸3"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/4.jpg" alt="古建壁纸4"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/5.jpg" alt="古建壁纸5"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/6.jpg" alt="古建壁纸6"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/7.jpg" alt="古建壁纸7"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/8.jpg" alt="古建壁纸8"></div>
+            <div class="header-carousel-slide"><img src="./首页壁纸/9.jpg" alt="古建壁纸9"></div>
+        </div>
+        <!-- 左右翻页按钮 -->
+        <button class="carousel-btn carousel-prev" aria-label="上一张">‹</button>
+        <button class="carousel-btn carousel-next" aria-label="下一张">›</button>
+        <!-- 轮播指示器（底部小圆点） -->
+        <div class="carousel-indicators"></div>
+    </div>
+
+    <!-- 原有内容完全保留，不要修改 -->
+    <canvas id="particleCanvas" class="header-particle-canvas"></canvas>
+    <h1>力与美的千年对话</h1>
+    <p class="subtitle">榫卯、斗拱、拱券 —— 古代建筑的力学密码</p>
+    <blockquote class="quote">
+        不用一钉一铆，却能抗震千年。我们收集了隋、唐、宋、明、清实测数据，结合GIS地图与时间轴，带您穿越时空，看懂这些结构的科学内核。
+    </blockquote>
+</header>
+    
+       <div class="stats">
+        <div class="stat-card stat-card--total" id="stat-total-card" role="button">
+            <div class="number" id="total-count">90</div>
+            <div class="label">建筑总数</div>
+        </div>
+        <div class="stat-card stat-card--child"><div class="number" style="color: #B4463C;">12</div><div class="label">宫殿</div></div>
+        <div class="stat-card stat-card--child"><div class="number" style="color: #50768E;">10</div><div class="label">官府</div></div>
+        <div class="stat-card stat-card--child"><div class="number" style="color: #997A5B;">42</div><div class="label">民居</div></div>
+        <div class="stat-card stat-card--child"><div class="number" style="color: #664E39;">26</div><div class="label">桥梁</div></div>
+    </div>
+
+    <!-- 趣味小知识卡片 -->
+    <div class="tabs">
+        <div class="fun-fact-card" id="funFactCard" onclick="refreshFunFact()">
+            <h4>🏯 古建小知识</h4>
+            <p id="funFactText">榫卯结构起源于距今约7000年前的河姆渡文化时期，比文字出现还要早。</p>
+            <div class="fun-fact-refresh">点击刷新 ↗</div>
+        </div>
+    </div>
+
+
+    <!-- 知识问答模块 - 新增开始 -->
+<div class="tabs quiz-module-wrap">
+    <div class="quiz-card" id="quizCard">
+        <div class="quiz-header" onclick="toggleQuizPanel()">
+            <h4>📝 古建知识问答</h4>
+            <div class="quiz-toggle" id="quizToggle">点击展开答题 ↓</div>
+        </div>
+        <!-- 答题面板 - 默认收起 -->
+        <div class="quiz-panel" id="quizPanel" style="display: none;">
+            <div class="quiz-question-area">
+                <div class="quiz-question" id="quizQuestion"></div>
+                <div class="quiz-options" id="quizOptions"></div>
+            </div>
+            <div class="quiz-result" id="quizResult" style="display: none;"></div>
+            <div class="quiz-footer">
+                <button class="quiz-btn quiz-prev" id="quizPrev" onclick="switchQuestion(-1)" disabled>上一题</button>
+                <button class="quiz-btn quiz-random" id="quizRandom" onclick="randomQuestion()">随机抽题</button>
+                <button class="quiz-btn quiz-next" id="quizNext" onclick="switchQuestion(1)" disabled>下一题</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 知识问答模块 - 新增结束 -->
+    <main class="tabs">
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="showTab('map', this)">🗺️ GIS地图</button>
+            <button class="tab-btn" onclick="showTab('sunmao', this)">🔧 榫卯结构</button>
+            <button class="tab-btn" onclick="showTab('dougong', this)">🏛️ 斗拱结构</button>
+            <button class="tab-btn" onclick="showTab('gongquan', this)">🌉 拱券结构</button>
+            <button class="tab-btn" onclick="showTab('charts', this)">📊 历代对比</button>
+        </div>
+
+        <!-- GIS地图标签页 -->
+        <div id="map-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>朝代 <span class="interactive-tip" id="currentDynastyDisplay">全部</span></label>
+                            <select id="dynasty-filter" onchange="filterBuildings()">
+                                <option value="全部">全部</option>
+                                <option value="隋">隋 (581-618)</option>
+                                <option value="唐">唐 (618-907)</option>
+                                <option value="宋">宋 (960-1279)</option>
+                                <option value="明">明 (1368-1644)</option>
+                                <option value="清">清 (1644-1911)</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>建筑类型</label>
+                            <select id="type-filter" onchange="filterBuildings()">
+                                <option value="全部">全部</option>
+                                <option value="宫殿">宫殿</option>
+                                <option value="官府">官府</option>
+                                <option value="民居">民居</option>
+                                <option value="桥梁">桥梁</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>核心结构</label>
+                            <select id="structure-filter" onchange="filterBuildings()">
+                                <option value="全部">全部</option>
+                                <option value="榫卯">榫卯</option>
+                                <option value="斗拱">斗拱</option>
+                                <option value="拱券">拱券</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                        <div class="card">
+    <div class="card-header"><div class="card-title">⏱️ 时间轴</div></div>
+    <div class="card-body">
+        <div class="timeline-guide">拖动滑块或点击朝代，地图、图表、3D模型同步联动</div>
+        <div class="custom-timeline">
+            <div class="timeline-track">
+                <input type="range" id="dynasty-slider" min="0" max="4" step="1" value="0">
+                <div class="timeline-markers">
+                    <span class="marker" data-dynasty="唐">唐</span>
+                    <span class="marker" data-dynasty="宋">宋</span>
+                    <span class="marker" data-dynasty="元">元</span>
+                    <span class="marker" data-dynasty="明">明</span>
+                    <span class="marker" data-dynasty="清">清</span>
+                </div>
+            </div>
+            <div class="dynasty-summary-card" id="dynasty-summary">
+                <h4>全部朝代</h4>
+                <p>中国古代建筑结构从唐到清，经历了从雄浑到精致、从结构主导到装饰主导的演变过程。</p>
+            </div>
+        </div>
+    </div>
+</div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">建筑分布地图</div></div>
+                    <div class="card-body"><div id="map"></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">建筑列表</div>
+                        <div class="card-desc" id="building-count">共 73 处建筑</div>
+                    </div>
+                    <div class="card-body"><div class="building-list" id="building-list"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 榫卯结构页面 -->
+        <div id="sunmao-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📘 简介</div></div>
+                <div class="card-body">
+                    <p>榫卯是中国古代木构建筑的核心连接方式，通过榫头插入卯眼实现构件咬合，不用一钉一铆。其原理是利用木材的弹性和摩擦力，将节点变为半刚性节点，既能传递荷载，又能耗散地震能量。榫卯的种类繁多，如燕尾榫、透榫、粽角榫等，分别适用于不同受力部位。</p>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🔧 榫卯类型</div></div>
+                    <div class="card-body" id="sunmao-type-list"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">⚙️ 参数调节 + 实时力学反馈</div></div>
+                    <div class="card-body">
+                        <div class="slider-group">
+                            <label>榫头长度 <span id="sm-length-val">50</span> mm</label>
+                            <input type="range" id="sm-length" min="30" max="80" value="50" step="1">
+                        </div>
+                        <div class="slider-group">
+                            <label>榫头宽度 <span id="sm-width-val">20</span> mm</label>
+                            <input type="range" id="sm-width" min="10" max="30" value="20" step="1">
+                        </div>
+                        <div class="slider-group">
+                            <label>榫头深度 <span id="sm-depth-val">30</span> mm</label>
+                            <input type="range" id="sm-depth" min="20" max="50" value="30" step="1">
+                        </div>
+                        <div class="gauge-row">
+                            <div class="gauge-item">
+                                <canvas id="gauge-tensile" width="150" height="100"></canvas>
+                                <div>抗拉强度 <span id="tensile-num">12.5</span> kN</div>
+                                <div class="small-gray-note inline" id="tensile-note">构件抵抗拉伸破坏的能力，数值越大越不易被拉断。</div>
+                            </div>
+                            <div class="gauge-item">
+                                <canvas id="gauge-shear" width="150" height="100"></canvas>
+                                <div>抗剪强度 <span id="shear-num">8.5</span> kN</div>
+                                <div class="small-gray-note inline" id="shear-note">构件抵抗剪切错动的能力，数值越大越不易被剪断。</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:20px; background:#f5efe7; border-radius:8px; padding:15px;">
+                            <div style="font-size:0.9rem; font-weight:600; margin-bottom:8px;">📊 应力云图模拟 (MPa)</div>
+                            <div class="small-gray-note inline" id="stress-sim-note">通过柱状高度示意不同部位的应力大小，柱越高表示该处受力越集中。</div>
+                            <div class="stress-bars">
+                                <div class="stress-bar" id="stress-node" style="height:60px;" data-label="节点"></div>
+                                <div class="stress-bar" id="stress-tenon" style="height:48px;" data-label="榫头"></div>
+                                <div class="stress-bar" id="stress-mortise" style="height:36px;" data-label="卯眼"></div>
+                            </div>
+                            <div class="stress-labels" aria-hidden="true" style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">节点</div>
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">榫头</div>
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">卯眼</div>
+                            </div>
+                            <div class="slider-group" style="margin-top:12px;">
+                                <label>节点应力 <span id="node-stress-val">6.0</span> MPa</label>
+                                <input type="range" id="node-stress-slider" min="0" max="20" value="6" step="0.1" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 斗拱结构页面 -->
+        <div id="dougong-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📘 简介</div></div>
+                <div class="card-body">
+                    <p>斗拱是中国古代建筑屋顶与立柱之间的过渡构件，由 “斗” 和 “拱” 层层叠加而成。它像弹簧一样将屋顶的巨大荷载传递到柱子上，同时允许一定的变形，因此抗震性能极佳。唐代斗拱硕大、结构功能强，到清代逐渐变小、装饰性增强，体现了建筑技术的演变。</p>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🏛️ 历代斗拱用材等级</div>
+                        <button class="tab-btn" onclick="openViewer3d('斗拱')">查看 3D 模型</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table" id="dougong-table">
+                            <thead><tr><th>朝代</th><th>等级</th><th>尺寸(mm)</th><th>代表建筑</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">⚙️ 斗拱参数 + 实时力学</div></div>
+                    <div class="card-body">
+                        <div class="slider-group">
+                            <label>出跳数 (层数) <span id="dg-layers-val">6</span></label>
+                            <input type="range" id="dg-layers" min="1" max="12" value="6" step="1">
+                        </div>
+                        <div class="slider-group">
+                            <label>材份等级 <span id="dg-grade-val">5</span> 等材</label>
+                            <input type="range" id="dg-grade" min="1" max="8" value="5" step="1">
+                        </div>
+                        <div class="gauge-row">
+                            <div class="gauge-item">
+                                <canvas id="gauge-dg-load" width="150" height="100"></canvas>
+                                <div>承重能力 <span id="dg-load-num">108</span> kN</div>
+                                <div class="small-gray-note inline" id="dg-load-note">斗拱能够承受的最大竖向荷载，数值越大承载越强。</div>
+                            </div>
+                            <div class="gauge-item">
+                                <canvas id="gauge-dg-stability" width="150" height="100"></canvas>
+                                <div>抗震系数 <span id="dg-stab-num">0.72</span></div>
+                                <div class="small-gray-note inline" id="dg-stab-note">反映结构耗散地震能量的能力，数值越大抗震性能越好（0~1.5之间）。</div>
+                            </div>
+                        </div>
+                        <div style="background:#f5efe7; border-radius:8px; padding:15px;">
+                            <div style="font-size:0.9rem; font-weight:600; margin-bottom:8px;">📊 应力云图 (MPa)</div>
+                            <div class="small-gray-note inline" id="dg-stress-sim-note">通过柱状高度示意拱、斗、昂的应力分布，柱越高表示该处受力越大。</div>
+                            <div class="stress-bars" style="height:80px;">
+                                <div class="stress-bar" id="dg-stress-arch" style="height:40px;" data-label="拱"></div>
+                                <div class="stress-bar" id="dg-stress-dou" style="height:28px;" data-label="斗"></div>
+                                <div class="stress-bar" id="dg-stress-ang" style="height:52px;" data-label="昂"></div>
+                            </div>
+                            <div class="stress-labels" aria-hidden="true" style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">拱</div>
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">斗</div>
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">昂</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 拱券结构页面 -->
+        <div id="gongquan-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📘 简介</div></div>
+                <div class="card-body">
+                    <p>拱券是利用石块或砖块砌成的弧形承重结构，能将上部荷载转化为沿拱圈的压力，再传递给两侧的桥台或墙体。赵州桥的敞肩拱设计比欧洲早 1200 年，是力学智慧的典范。矢跨比（拱高与跨度之比）决定了拱的受力效率，一般在 1/5 到 1/2 之间。</p>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🌉 中国古代名桥参数</div>
+                        <button class="tab-btn" onclick="openViewer3d('拱券')">查看 3D 模型</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table" id="gongquan-table">
+                            <thead><tr><th>名称</th><th>朝代</th><th>跨度(m)</th><th>全长(m)</th><th>矢跨比</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">⚙️ 拱券参数 + 实时力学</div></div>
+                    <div class="card-body">
+                        <div class="slider-group">
+                            <label>矢高 <span id="gq-rise-val">7.28</span> m</label>
+                            <input type="range" id="gq-rise" min="3" max="15" value="7.28" step="0.1">
+                        </div>
+                        <div class="slider-group">
+                            <label>跨度 <span id="gq-span-val">37.37</span> m</label>
+                            <input type="range" id="gq-span" min="10" max="60" value="37.37" step="0.1">
+                        </div>
+                        <div class="gauge-row">
+                            <div class="gauge-item">
+                                <canvas id="gauge-thrust" width="150" height="100"></canvas>
+                                <div>水平推力 <span id="thrust-num">185</span> kN</div>
+                                <div class="small-gray-note inline" id="thrust-note">拱券对两侧桥台产生的向外推力，需由桥台或地基平衡。</div>
+                            </div>
+                            <div class="gauge-item">
+                                <canvas id="gauge-capacity" width="150" height="100"></canvas>
+                                <div>承载能力 <span id="capacity-num">420</span> kN</div>
+                                <div class="small-gray-note inline" id="capacity-note">拱券整体能承受的最大荷载（含自重和外加荷载）。</div>
+                            </div>
+                        </div>
+                        <div style="background:#f5efe7; border-radius:8px; padding:15px;">
+                            <div style="font-size:0.9rem; font-weight:600; margin-bottom:8px;">📊 应力云图 (MPa)</div>
+                            <div class="small-gray-note inline" id="gq-stress-sim-note">通过柱状高度示意拱券和桥台的应力分布，柱越高表示受力越大。</div>
+                            <div class="stress-bars" style="height:80px;">
+                                <div class="stress-bar" id="gq-stress-arch" style="height:62px;" data-label="拱券"></div>
+                                <div class="stress-bar" id="gq-stress-abut" style="height:31px;" data-label="桥台"></div>
+                            </div>
+                            <div class="stress-labels" aria-hidden="true" style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">拱券</div>
+                                <div class="stress-label" style="width:30px;text-align:center;color:#2c4a52;font-size:0.9rem;">桥台</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历代对比图表页面 -->
+        <div id="charts-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📘 说明</div></div>
+                <div class="card-body">
+                    <div class="dynasty-insight" aria-hidden="false">
+                        <div class="dynasty-item">
+                            <h5>隋唐</h5>
+                            <p>国力强盛、气势雄浑；斗拱宏大、结构以承重为先。</p>
+                        </div>
+                        <div class="dynasty-item">
+                            <h5>宋</h5>
+                            <p>经济文化繁荣，工艺精细，《营造法式》推动用材与比例规范化。</p>
+                        </div>
+                        <div class="dynasty-item">
+                            <h5>元</h5>
+                            <p>受游牧文化影响，风格趋简，保留宋代制度与实用性。</p>
+                        </div>
+                        <div class="dynasty-item">
+                            <h5>明</h5>
+                            <p>官式体系成熟，斗拱装饰化加强，用材与规制更统一。</p>
+                        </div>
+                        <div class="dynasty-item">
+                            <h5>清</h5>
+                            <p>装饰繁复、工艺精湛；斗拱功能弱化为装饰性元素。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">📊 三大结构历代对比 (鼠标悬停查看详情)</div></div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="timelineChart" style="width:100%; height:300px;"></canvas>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-item">
+                            <canvas id="strengthChart" style="width:100%; height:250px;"></canvas>
+                        </div>
+                        <div class="chart-item">
+                            <canvas id="countChart" style="width:100%; height:250px;"></canvas>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+                        <button id="countViewToggle" class="tab-btn" type="button">切换到百分比视图</button>
+                        <div style="color:#5a7a8a;font-size:0.95rem;">当前视图：<span id="countViewMode">绝对数量</span></div>
+                    </div>
+                    <div class="card" style="margin-top:12px;">
+                        <div class="card-body">
+                            <strong>结构类型分布解读：</strong>
+                            <p style="margin-top:8px;">宫殿多使用斗拱，因为斗拱能体现等级且抗震性好；官府、民居以榫卯为主，因为木构架灵活易得；桥梁几乎全部采用拱券，利用石拱受压特性实现大跨度。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+   <!-- 3D 模型展示层 -->
+<div id="viewer3d-overlay" class="viewer3d-overlay" style="display:none;">
+    <div id="viewer3d-canvas-wrap" class="viewer3d-canvas-wrap"></div>
+    <div class="viewer3d-header">
+        <span id="viewer3d-title" class="viewer3d-title">结构 3D 模型</span>
+        <button type="button" id="viewer3d-close" class="viewer3d-close-btn" aria-label="关闭 3D 模型">✕</button>
+    </div>
+    <div class="viewer3d-toolbar">
+        <button type="button" id="viewer3d-disassemble">拆解</button>
+        <button type="button" id="viewer3d-reset">复位</button>
+    </div>
+    <div id="viewer3d-type-bar" class="viewer3d-type-bar" style="display:none;"></div>
+    <div id="viewer3d-compare-panel" class="viewer3d-compare-panel" style="display:none;"></div>
+    <div id="viewer3d-bottom-panel" class="viewer3d-bottom-panel" style="display:none;"></div>
+    <div id="viewer3d-tooltip" class="viewer3d-tooltip"></div>
+</div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div><h3>榫卯·斗拱·拱券</h3><p>中国古代建筑力学智慧的时空推演</p><p>参赛大类：AI+信息可视化设计</p></div>
+            <div><h3>数据来源</h3><ul><li>《营造法式》研究数据库</li><li>清华大学建筑学院实测数据</li><li>全国重点文物保护单位名录</li></ul></div>
+            <div><h3>团队信息</h3><p>| 版本 2.6.0</p><p>最后更新：2026年2月</p></div>
+        </div>
+    </footer>
+
+    <script>
+        // ====================== 数据定义 ======================
+             // ====================== 数据定义 ======================
+        const DATA = {
+            buildings: [
+    {"id":"p1","name":"北京故宫太和殿","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.918,"desc":"中国现存古建筑中面积最大的宫殿，面阔11间，进深5间，建筑面积2377平方米，高26.92米，重檐庑殿顶","structure":"斗拱"},
+    {"id":"p2","name":"北京故宫中和殿","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.918,"desc":"故宫外朝三大殿之一，单檐四角攒尖顶，面阔、进深各三间","structure":"斗拱"},
+    {"id":"p3","name":"北京故宫保和殿","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.918,"desc":"故宫外朝三大殿之一，重檐歇山顶，面阔9间，进深5间","structure":"斗拱"},
+    {"id":"p4","name":"北京故宫乾清宫","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.917,"desc":"明清两代皇帝寝宫，面阔9间，进深5间，重檐庑殿顶","structure":"斗拱"},
+    {"id":"p5","name":"北京故宫坤宁宫","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.917,"desc":"明清两代皇后寝宫，面阔9间，重檐庑殿顶","structure":"斗拱"},
+    {"id":"p6","name":"北京故宫交泰殿","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"1420年","lng":116.397,"lat":39.917,"desc":"后三宫之一，单檐四角攒尖顶，存放二十五宝","structure":"斗拱"},
+    {"id":"p7","name":"沈阳故宫大政殿","type":"宫殿","province":"辽宁省","city":"沈阳市","dynasty":"后金","year":"1625年","lng":123.452,"lat":41.796,"desc":"八角重檐亭式建筑，皇帝举行大典之处，八角形平面，重檐攒尖顶","structure":"斗拱"},
+    {"id":"p8","name":"沈阳故宫崇政殿","type":"宫殿","province":"辽宁省","city":"沈阳市","dynasty":"后金","year":"1627年","lng":123.452,"lat":41.796,"desc":"日常朝会和处理政务之处，硬山顶建筑，面阔五间","structure":"斗拱"},
+    {"id":"p9","name":"沈阳故宫凤凰楼","type":"宫殿","province":"辽宁省","city":"沈阳市","dynasty":"后金","year":"1627年","lng":123.452,"lat":41.796,"desc":"盛京最高建筑，三层歇山顶，面阔三间","structure":"斗拱"},
+    {"id":"p10","name":"承德避暑山庄澹泊敬诚殿","type":"宫殿","province":"河北省","city":"承德市","dynasty":"清","year":"乾隆年间","lng":117.963,"lat":40.971,"desc":"避暑山庄正殿，楠木建造，不施彩绘，面阔七间","structure":"斗拱"},
+    {"id":"p11","name":"承德避暑山庄烟波致爽殿","type":"宫殿","province":"河北省","city":"承德市","dynasty":"清","year":"康熙年间","lng":117.963,"lat":40.971,"desc":"皇帝寝宫，面阔七间，前后出廊","structure":"斗拱"},
+    {"id":"p12","name":"颐和园仁寿殿","type":"宫殿","province":"北京市","city":"海淀区","dynasty":"清","year":"乾隆十五年(1750年)","lng":116.275,"lat":39.999,"desc":"颐和园主殿，慈禧太后和光绪皇帝坐朝听政处，面阔七间","structure":"斗拱"},
+    {"id":"p13","name":"颐和园乐寿堂","type":"宫殿","province":"北京市","city":"海淀区","dynasty":"清","year":"乾隆十五年(1750年)","lng":116.275,"lat":39.999,"desc":"慈禧太后寝宫，面阔七间，前后出廊，硬山顶","structure":"斗拱"},
+    {"id":"p14","name":"天坛祈年殿","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"永乐十八年(1420年)","lng":116.407,"lat":39.883,"desc":"明清皇帝祭天之所，三重檐攒尖顶，直径32米，高38米","structure":"斗拱"},
+    {"id":"p15","name":"天坛皇穹宇","type":"宫殿","province":"北京市","city":"东城区","dynasty":"明","year":"嘉靖九年(1530年)","lng":116.407,"lat":39.883,"desc":"存放祭天神牌之所，单檐攒尖顶，回音壁环绕","structure":"斗拱"},
+    {"id":"g1","name":"直隶总督署","type":"官府","province":"河北省","city":"保定市","dynasty":"清","year":"雍正七年(1729年)","lng":115.464,"lat":38.874,"desc":"清代直隶总督办公处，占地约3万平方米，建筑布局严谨，是我国保存最完整的清代省级衙署","structure":"榫卯"},
+    {"id":"g2","name":"内乡县衙","type":"官府","province":"河南省","city":"南阳市","dynasty":"元/清","year":"大德八年(1304年)","lng":111.834,"lat":33.049,"desc":"中国保存最完整的县级官署衙门，大堂面阔五间，进深三间九架，单檐硬山式建筑","structure":"榫卯"},
+    {"id":"g3","name":"南阳府衙","type":"官府","province":"河南省","city":"南阳市","dynasty":"明","year":"洪武年间","lng":112.528,"lat":33.004,"desc":"明清南阳府治所，保存完整的府级衙署建筑群","structure":"榫卯"},
+    {"id":"g4","name":"淮安府署","type":"官府","province":"江苏省","city":"淮安市","dynasty":"明","year":"洪武三年(1370年)","lng":119.114,"lat":33.504,"desc":"全国仅存的两座府署之一，建筑规模宏大，保存完好","structure":"榫卯"},
+    {"id":"g5","name":"霍州署衙","type":"官府","province":"山西省","city":"霍州市","dynasty":"元/明","year":"元大德年间","lng":111.723,"lat":36.563,"desc":"中国现存唯一州级署衙，大堂为元代建筑，面阔五间","structure":"榫卯"},
+    {"id":"g6","name":"平遥县衙","type":"官府","province":"山西省","city":"晋中市","dynasty":"明/清","year":"北魏始建","lng":112.176,"lat":37.202,"desc":"中国现存规模最大的县衙，占地26000平方米，六进院落","structure":"榫卯"},
+    {"id":"g7","name":"绛州大堂","type":"官府","province":"山西省","city":"新绛县","dynasty":"元","year":"元大德年间","lng":111.225,"lat":35.617,"desc":"元代州衙大堂，面阔七间，进深八椽，单檐悬山顶","structure":"榫卯"},
+    {"id":"g8","name":"叶县县衙","type":"官府","province":"河南省","city":"平顶山市","dynasty":"明","year":"洪武二年(1369年)","lng":113.357,"lat":33.621,"desc":"明代县衙建筑，占地16848平方米，五进院落","structure":"榫卯"},
+    {"id":"g9","name":"密县县衙","type":"官府","province":"河南省","city":"新密市","dynasty":"隋/清","year":"隋大业年间","lng":113.39,"lat":34.539,"desc":"保存完好的清代县衙，双进院落，占地4000平方米","structure":"榫卯"},
+    {"id":"g10","name":"浮梁古县衙","type":"官府","province":"江西省","city":"景德镇市","dynasty":"唐/清","year":"唐元和年间","lng":117.217,"lat":29.351,"desc":"江南唯一保存完好的清代县衙，五进院落","structure":"榫卯"},
+    {"id":"g11","name":"即墨县衙","type":"官府","province":"山东省","city":"青岛市","dynasty":"隋/清","year":"隋开皇年间","lng":120.447,"lat":36.389,"desc":"保存完好的清代县衙建筑群","structure":"榫卯"},
+    {"id":"g12","name":"临淄县衙","type":"官府","province":"山东省","city":"淄博市","dynasty":"明","year":"洪武年间","lng":118.309,"lat":36.816,"desc":"明代县衙大堂保存完好，面阔五间","structure":"榫卯"},
+    {"id":"g13","name":"鄞县县衙","type":"官府","province":"浙江省","city":"宁波市","dynasty":"唐/清","year":"唐长庆年间","lng":121.549,"lat":29.875,"desc":"清代县衙建筑，现存大堂等建筑","structure":"榫卯"},
+    {"id":"g14","name":"新绛县衙","type":"官府","province":"山西省","city":"新绛县","dynasty":"明/清","year":"明洪武年间","lng":111.225,"lat":35.617,"desc":"绛州州衙，保存有元代大堂","structure":"榫卯"},
+    {"id":"g15","name":"河间府署","type":"官府","province":"河北省","city":"河间市","dynasty":"明/清","year":"明洪武年间","lng":116.099,"lat":38.445,"desc":"明清府级衙署，近年修复","structure":"榫卯"},
+    {"id":"g16","name":"广平府署","type":"官府","province":"河北省","city":"永年区","dynasty":"明","year":"洪武年间","lng":114.541,"lat":36.773,"desc":"明代府级衙署建筑","structure":"榫卯"},
+    {"id":"g17","name":"大名府衙","type":"官府","province":"河北省","city":"大名县","dynasty":"明","year":"洪武年间","lng":115.154,"lat":36.284,"desc":"明代府衙遗址","structure":"榫卯"},
+    {"id":"g18","name":"正定府衙","type":"官府","province":"河北省","city":"正定县","dynasty":"明/清","year":"明洪武年间","lng":114.572,"lat":38.145,"desc":"明清正定府治所","structure":"榫卯"},
+    {"id":"g19","name":"顺德府衙","type":"官府","province":"河北省","city":"邢台市","dynasty":"明","year":"洪武年间","lng":114.504,"lat":37.068,"desc":"明代府级衙署","structure":"榫卯"},
+    {"id":"g20","name":"徽州府衙","type":"官府","province":"安徽省","city":"歙县","dynasty":"明/清","year":"明洪武年间","lng":118.436,"lat":29.871,"desc":"徽州府治所，近年修复，徽派建筑风格","structure":"榫卯"},
+    {"id":"r1","name":"乔家大院","type":"民居","province":"山西省","city":"祁县","dynasty":"清","year":"乾隆年间(1756年)","lng":112.333,"lat":37.358,"desc":"清代晋商乔致庸宅第，占地9180.8平方米，城堡式建筑群，6个大院，20个小院，313间房屋","structure":"榫卯"},
+    {"id":"r2","name":"王家大院","type":"民居","province":"山西省","city":"灵石县","dynasty":"清","year":"康熙至嘉庆年间","lng":111.778,"lat":36.878,"desc":"清代民居建筑集大成者，总面积15万平方米，依山而建，层层递进，123座院落","structure":"榫卯"},
+    {"id":"r3","name":"常家庄园","type":"民居","province":"山西省","city":"榆次区","dynasty":"清","year":"乾隆年间","lng":112.723,"lat":37.687,"desc":"晋商常氏家族宅院，占地60万平方米，园林式民居建筑群","structure":"榫卯"},
+    {"id":"r4","name":"渠家大院","type":"民居","province":"山西省","city":"祁县","dynasty":"清","year":"乾隆年间","lng":112.335,"lat":37.357,"desc":"晋商渠氏家族宅院，占地5317平方米，五进院落，砖雕精美","structure":"榫卯"},
+    {"id":"r5","name":"曹家大院","type":"民居","province":"山西省","city":"太谷区","dynasty":"明/清","year":"明末清初","lng":112.552,"lat":37.421,"desc":"晋商曹氏家族宅院，占地10600平方米，三多堂为代表作","structure":"榫卯"},
+    {"id":"r6","name":"宏村古民居群","type":"民居","province":"安徽省","city":"黟县","dynasty":"明/清","year":"明永乐年间","lng":117.987,"lat":30.001,"desc":"徽派民居代表，世界文化遗产，牛形村落布局，保存明清民居140余幢","structure":"榫卯"},
+    {"id":"r7","name":"西递古民居群","type":"民居","province":"安徽省","city":"黟县","dynasty":"明/清","year":"北宋皇佑年间","lng":117.938,"lat":29.904,"desc":"徽派民居代表，世界文化遗产，保存明清古民居124座，街巷99条","structure":"榫卯"},
+    {"id":"r8","name":"恭王府","type":"民居","province":"北京市","city":"西城区","dynasty":"清","year":"乾隆四十一年(1776年)","lng":116.389,"lat":39.936,"desc":"清代规模最大的王府，占地约6万平方米，采用传统榫卯结构，府邸与园林结合","structure":"榫卯"},
+    {"id":"r9","name":"醇亲王府","type":"民居","province":"北京市","city":"西城区","dynasty":"清","year":"乾隆年间","lng":116.384,"lat":39.94,"desc":"清代王府建筑，占地约4万平方米","structure":"榫卯"},
+    {"id":"r10","name":"郑王府","type":"民居","province":"北京市","city":"西城区","dynasty":"清","year":"顺治年间","lng":116.378,"lat":39.932,"desc":"清代郑亲王府邸，保存较完整","structure":"榫卯"},
+    {"id":"r11","name":"礼王府","type":"民居","province":"北京市","city":"西城区","dynasty":"清","year":"康熙年间","lng":116.371,"lat":39.929,"desc":"清代礼亲王府邸","structure":"榫卯"},
+    {"id":"r12","name":"平遥古城民居群","type":"民居","province":"山西省","city":"平遥县","dynasty":"明/清","year":"明清时期","lng":112.176,"lat":37.202,"desc":"世界文化遗产，保存明清民居3797处，四合院布局","structure":"榫卯"},
+    {"id":"r13","name":"福建土楼承启楼","type":"民居","province":"福建省","city":"永定区","dynasty":"清","year":"康熙四十八年(1709年)","lng":116.875,"lat":24.678,"desc":"最大的圆形土楼，直径73米，四层环形建筑，400个房间，榫卯木结构","structure":"榫卯"},
+    {"id":"r14","name":"福建土楼振成楼","type":"民居","province":"福建省","city":"永定区","dynasty":"清","year":"民国元年(1912年)","lng":116.875,"lat":24.678,"desc":"土楼王子，八卦形布局，直径约45米，内外两环","structure":"榫卯"},
+    {"id":"r15","name":"福建土楼二宜楼","type":"民居","province":"福建省","city":"华安县","dynasty":"清","year":"乾隆三十五年(1770年)","lng":117.536,"lat":25.012,"desc":"圆形土楼代表，直径71.2米，四层建筑，世界遗产","structure":"榫卯"},
+    {"id":"r16","name":"福建土楼田螺坑土楼群","type":"民居","province":"福建省","city":"南靖县","dynasty":"清","year":"清嘉庆年间","lng":117.087,"lat":24.659,"desc":"四菜一汤土楼群，一方四圆，世界文化遗产","structure":"榫卯"},
+    {"id":"r17","name":"福建土楼和贵楼","type":"民居","province":"福建省","city":"南靖县","dynasty":"清","year":"雍正十年(1732年)","lng":117.087,"lat":24.659,"desc":"最高的方形土楼，五层，高21.5米，建在沼泽地上","structure":"榫卯"},
+    {"id":"r18","name":"福建土楼怀远楼","type":"民居","province":"福建省","city":"南靖县","dynasty":"清","year":"宣统元年(1909年)","lng":117.087,"lat":24.659,"desc":"精美的圆形土楼，直径38米，双环结构","structure":"榫卯"},
+    {"id":"r19","name":"客家围屋龙光围","type":"民居","province":"江西省","city":"龙南县","dynasty":"清","year":"清道光年间","lng":114.789,"lat":24.912,"desc":"客家围屋代表，占地约10000平方米，四角炮楼","structure":"榫卯"},
+    {"id":"r20","name":"客家围屋燕翼围","type":"民居","province":"江西省","city":"龙南县","dynasty":"清","year":"康熙年间","lng":114.789,"lat":24.912,"desc":"客家围屋，高四层，占地1367平方米，防御性强","structure":"榫卯"},
+    {"id":"r21","name":"开平碉楼自力村碉楼群","type":"民居","province":"广东省","city":"开平市","dynasty":"民国","year":"1910年代","lng":112.4,"lat":22.367,"desc":"中西合璧的碉楼建筑群，世界文化遗产","structure":"榫卯"},
+    {"id":"r22","name":"婺源古村民居群","type":"民居","province":"江西省","city":"婺源县","dynasty":"明/清","year":"明清时期","lng":117.862,"lat":29.248,"desc":"徽派民居建筑群，白墙黛瓦马头墙","structure":"榫卯"},
+    {"id":"r23","name":"周庄沈厅","type":"民居","province":"江苏省","city":"昆山市","dynasty":"清","year":"乾隆年间","lng":120.861,"lat":31.127,"desc":"江南水乡民居代表，七进院落，占地2000平方米","structure":"榫卯"},
+    {"id":"r24","name":"周庄张厅","type":"民居","province":"江苏省","city":"昆山市","dynasty":"明","year":"正统年间","lng":120.861,"lat":31.127,"desc":"明代民居，六进院落，河穿屋过","structure":"榫卯"},
+    {"id":"r25","name":"同里退思园","type":"民居","province":"江苏省","city":"吴江区","dynasty":"清","year":"光绪年间","lng":120.716,"lat":31.16,"desc":"世界文化遗产，贴水园，占地6500平方米","structure":"榫卯"},
+    {"id":"r26","name":"乌镇古民居群","type":"民居","province":"浙江省","city":"桐乡市","dynasty":"明/清","year":"明清时期","lng":120.487,"lat":30.747,"desc":"江南水乡民居，临河而建，水阁特色","structure":"榫卯"},
+    {"id":"r27","name":"西塘古民居群","type":"民居","province":"浙江省","city":"嘉善县","dynasty":"明/清","year":"明清时期","lng":120.888,"lat":30.949,"desc":"江南水乡，廊棚1300米，弄堂122条","structure":"榫卯"},
+    {"id":"r28","name":"南浔张石铭旧宅","type":"民居","province":"浙江省","city":"湖州市","dynasty":"清","year":"光绪年间","lng":120.089,"lat":30.874,"desc":"江南巨宅，占地6500平方米，中西合璧","structure":"榫卯"},
+    {"id":"r29","name":"南浔小莲庄","type":"民居","province":"浙江省","city":"湖州市","dynasty":"清","year":"光绪年间","lng":120.089,"lat":30.874,"desc":"刘氏私家花园，占地27亩，荷花池","structure":"榫卯"},
+    {"id":"r30","name":"皇城相府","type":"民居","province":"山西省","city":"阳城县","dynasty":"明/清","year":"明崇祯年间","lng":112.539,"lat":35.487,"desc":"清代名相陈廷敬府邸，占地3.6万平方米，城堡式建筑","structure":"榫卯"},
+    {"id":"b1","name":"赵州桥(安济桥)","type":"桥梁","province":"河北省","city":"赵县","dynasty":"隋","year":"大业年间(605-618年)","lng":114.769,"lat":37.694,"desc":"世界现存最早、跨度最大的单孔敞肩石拱桥，净跨37.37米，矢跨比1:5.12，敞肩拱世界首创","structure":"拱券"},
+    {"id":"b2","name":"卢沟桥","type":"桥梁","province":"北京市","city":"丰台区","dynasty":"金","year":"大定二十九年(1189年)","lng":116.211,"lat":39.857,"desc":"十一孔联拱石桥，全长266.5米，桥上石狮501只，中国四大古桥之一","structure":"拱券"},
+    {"id":"b3","name":"洛阳桥(万安桥)","type":"桥梁","province":"福建省","city":"泉州市","dynasty":"北宋","year":"嘉佑四年(1059年)","lng":118.665,"lat":24.932,"desc":"中国现存最早的跨海梁式石桥，全长834米，筏型基础首创，牡蛎固基法","structure":"拱券"},
+    {"id":"b4","name":"广济桥(湘子桥)","type":"桥梁","province":"广东省","city":"潮州市","dynasty":"宋/明","year":"乾道七年(1171年)","lng":116.637,"lat":23.663,"desc":"世界上最早的启闭式桥梁，全长518米，十八梭船二十四洲，梁桥与浮桥结合","structure":"拱券"},
+    {"id":"b5","name":"宝带桥","type":"桥梁","province":"江苏省","city":"苏州市","dynasty":"唐","year":"元和十一年(816年)","lng":120.635,"lat":31.256,"desc":"中国现存最长多孔石拱桥，全长317米，53孔连拱，薄墩联拱技术","structure":"拱券"},
+    {"id":"b6","name":"十七孔桥","type":"桥梁","province":"北京市","city":"海淀区","dynasty":"清","year":"乾隆年间","lng":116.275,"lat":39.999,"desc":"颐和园内最大石桥，长150米，17孔，桥栏望柱雕有544只石狮","structure":"拱券"},
+    {"id":"b7","name":"灞桥","type":"桥梁","province":"陕西省","city":"西安市","dynasty":"汉/清","year":"汉代始建","lng":108.947,"lat":34.267,"desc":"中国古代著名石拱桥，历代多次重修，灞桥折柳典故出处","structure":"拱券"},
+    {"id":"b8","name":"安平桥","type":"桥梁","province":"福建省","city":"晋江市","dynasty":"南宋","year":"绍兴八年(1138年)","lng":118.467,"lat":24.724,"desc":"中国古代最长石梁桥，全长2255米，天下无桥长此桥，368座桥墩","structure":"拱券","images":["1.jpg"]},
+    {"id":"b9","name":"小商桥","type":"桥梁","province":"河南省","city":"临颍县","dynasty":"隋","year":"开皇四年(584年)","lng":113.936,"lat":33.816,"desc":"比赵州桥更早的敞肩石拱桥，净跨12.1米，矢跨比约0.25","structure":"拱券"},
+    {"id":"b10","name":"永通桥","type":"桥梁","province":"河北省","city":"赵县","dynasty":"金","year":"明昌年间(1190-1196年)","lng":114.769,"lat":37.694,"desc":"仿赵州桥建造，单孔敞肩石拱桥，净跨26米","structure":"拱券"},
+    {"id":"b11","name":"虹桥(清明上河图原型)","type":"桥梁","province":"河南省","city":"开封市","dynasty":"宋","year":"宋代","lng":114.352,"lat":34.802,"desc":"木拱桥代表，编木拱桥技术，跨度约20米","structure":"拱券"},
+    {"id":"b12","name":"泰顺廊桥北涧桥","type":"桥梁","province":"浙江省","city":"泰顺县","dynasty":"清","year":"康熙十三年(1674年)","lng":119.872,"lat":27.557,"desc":"木拱廊桥代表，编木拱结构，廊屋覆盖，跨度约20米","structure":"拱券"},
+    {"id":"b13","name":"泰顺廊桥溪东桥","type":"桥梁","province":"浙江省","city":"泰顺县","dynasty":"明","year":"隆庆四年(1570年)","lng":119.872,"lat":27.557,"desc":"木拱廊桥，编木拱结构，跨度约26米","structure":"拱券"},
+    {"id":"b14","name":"泰顺廊桥三条桥","type":"桥梁","province":"浙江省","city":"泰顺县","dynasty":"宋","year":"绍兴七年(1137年)","lng":119.872,"lat":27.557,"desc":"现存最古老的木拱廊桥之一","structure":"拱券"},
+    {"id":"b15","name":"寿宁廊桥鸾峰桥","type":"桥梁","province":"福建省","city":"寿宁县","dynasty":"明","year":"天启年间","lng":119.475,"lat":27.459,"desc":"全国单拱跨径最大的木拱桥，跨度37.6米","structure":"拱券"},
+    {"id":"b16","name":"屏南万安桥","type":"桥梁","province":"福建省","city":"屏南县","dynasty":"宋","year":"元祐年间","lng":118.987,"lat":26.912,"desc":"最长的木拱廊桥，全长98.2米，六孔五墩","structure":"拱券"},
+    {"id":"b17","name":"泸定桥","type":"桥梁","province":"四川省","city":"泸定县","dynasty":"清","year":"康熙四十五年(1706年)","lng":102.235,"lat":29.913,"desc":"铁索桥代表，13根铁链，全长103米，净跨100米","structure":"拱券"},
+    {"id":"b18","name":"霁虹桥","type":"桥梁","province":"云南省","city":"保山市","dynasty":"明/清","year":"成化年间","lng":99.163,"lat":25.112,"desc":"古代南方丝路要道，铁索桥，跨度约60米","structure":"拱券"},
+    {"id":"b19","name":"盘江桥","type":"桥梁","province":"贵州省","city":"关岭县","dynasty":"明","year":"崇祯年间","lng":105.621,"lat":25.884,"desc":"铁索桥，跨度约70米","structure":"拱券"},
+    {"id":"b20","name":"丰乐桥","type":"桥梁","province":"江西省","city":"婺源县","dynasty":"明","year":"万历年间","lng":117.862,"lat":29.248,"desc":"石拱廊桥，三孔，全长50余米","structure":"拱券"},
+    {"id":"b21","name":"彩虹桥","type":"桥梁","province":"江西省","city":"婺源县","dynasty":"宋","year":"绍兴年间","lng":117.862,"lat":29.248,"desc":"廊桥代表，四墩五孔，全长140米","structure":"拱券"},
+    {"id":"b22","name":"鱼沼飞梁","type":"桥梁","province":"山西省","city":"太原市","dynasty":"宋","year":"天圣年间","lng":112.452,"lat":37.708,"desc":"十字形石桥，中国现存最早的十字桥","structure":"拱券"},
+    {"id":"b23","name":"金水桥","type":"桥梁","province":"北京市","city":"东城区","dynasty":"明","year":"永乐年间","lng":116.397,"lat":39.918,"desc":"故宫内金水河上的汉白玉石桥，五座单孔拱桥","structure":"拱券"},
+    {"id":"b24","name":"断桥","type":"桥梁","province":"浙江省","city":"杭州市","dynasty":"唐","year":"唐代","lng":120.149,"lat":30.253,"desc":"西湖著名景点，单孔石拱桥，白蛇传故事发生地","structure":"拱券"},
+    {"id":"b25","name":"苏堤六桥","type":"桥梁","province":"浙江省","city":"杭州市","dynasty":"宋","year":"元祐四年(1089年)","lng":120.149,"lat":30.253,"desc":"苏堤上六座单孔石拱桥，跨虹桥、东浦桥、压堤桥、望山桥、锁澜桥、映波桥","structure":"拱券"}
+],
+sunmao: [
+    {"name":"燕尾榫","desc":"榫头呈梯形，拉结力强，常用于地板拼接","tensile":12.5,"shear":8.5,"earthquake":7},
+    {"name":"透榫","desc":"贯穿构件，多用于梁柱节点","tensile":18.5,"shear":12.3,"earthquake":8},
+    {"name":"搭掌榫","desc":"榫头如手掌，用于水平构件连接","tensile":15.0,"shear":10.2,"earthquake":7},
+    {"name":"管脚榫","desc":"柱脚固定用榫，抗拉强度10.0kN，抗震8级","tensile":10.0,"shear":7.8,"earthquake":8},
+    {"name":"馒头榫","desc":"柱头连接用榫，抗拉强度14.0kN，抗震8级","tensile":14.0,"shear":9.5,"earthquake":8},
+    {"name":"箍头榫","desc":"加强节点刚度，抗拉强度16.5kN，抗震9级","tensile":16.5,"shear":11.8,"earthquake":9},
+    {"name":"半榫","desc":"不穿透构件，次要构件连接，抗拉强度8.0kN，抗震6级","tensile":8.0,"shear":5.5,"earthquake":6},
+    {"name":"夹榫","desc":"双面夹持连接，梁柱连接加强，抗拉强度15.5kN，抗震8级","tensile":15.5,"shear":10.5,"earthquake":8},
+    {"name":"十字榫","desc":"十字交叉连接，交叉构件连接，抗拉强度11.0kN，抗震7级","tensile":11.0,"shear":7.5,"earthquake":7},
+    {"name":"勾头榫","desc":"勾头锁定连接，可拆卸构件，抗拉强度9.5kN，抗震6级","tensile":9.5,"shear":6.0,"earthquake":6},
+    {"name":"企口榫","desc":"企口咬合连接，地板墙板拼接，抗拉强度7.0kN，抗震5级","tensile":7.0,"shear":4.5,"earthquake":5},
+    {"name":"龙凤榫","desc":"阴阳榫配合，高级家具精细构件，抗拉强度10.0kN，抗震7级","tensile":10.0,"shear":6.5,"earthquake":7},
+    {"name":"抱肩榫","desc":"肩部抱合连接，案桌类家具，抗拉强度13.0kN，抗震7级","tensile":13.0,"shear":8.5,"earthquake":7},
+    {"name":"插肩榫","desc":"插入肩部连接，案类家具腿足，抗拉强度11.5kN，抗震7级","tensile":11.5,"shear":7.0,"earthquake":7},
+    {"name":"夹头榫","desc":"夹持头部连接，案类家具，抗拉强度10.5kN，抗震6级","tensile":10.5,"shear":6.5,"earthquake":6}
+],
+dougong: [
+    {"dynasty":"唐","grade":"一等材","size":"270×180","unit":"mm","building":"大明宫含元殿"},
+    {"dynasty":"唐","grade":"二等材","size":"248×165","unit":"mm","building":"大明宫麟德殿"},
+    {"dynasty":"唐","grade":"三等材","size":"225×150","unit":"mm","building":"普通殿宇"},
+    {"dynasty":"辽","grade":"一等材","size":"270×180","unit":"mm","building":"辽南京皇宫大殿"},
+    {"dynasty":"辽","grade":"二等材","size":"248×165","unit":"mm","building":"辽上京皇宫大殿"},
+    {"dynasty":"宋","grade":"一等材","size":"270×180","unit":"mm","building":"北宋东京皇宫大殿"},
+    {"dynasty":"宋","grade":"二等材","size":"248×165","unit":"mm","building":"南宋临安皇宫大殿"},
+    {"dynasty":"宋","grade":"三等材","size":"225×150","unit":"mm","building":"普通殿宇"},
+    {"dynasty":"宋","grade":"四等材","size":"216×144","unit":"mm","building":"小式殿宇"},
+    {"dynasty":"宋","grade":"五等材","size":"198×132","unit":"mm","building":"厅堂类"},
+    {"dynasty":"宋","grade":"六等材","size":"180×120","unit":"mm","building":"亭榭类"},
+    {"dynasty":"宋","grade":"七等材","size":"157×105","unit":"mm","building":"小亭榭"},
+    {"dynasty":"宋","grade":"八等材","size":"135×90","unit":"mm","building":"殿内藻井"},
+    {"dynasty":"元","grade":"三等材","size":"225×150","unit":"mm","building":"元大都皇宫大殿"},
+    {"dynasty":"明","grade":"四等材","size":"202×135","unit":"mm","building":"南京故宫奉天殿"},
+    {"dynasty":"明","grade":"五等材","size":"180×120","unit":"mm","building":"普通宫殿"},
+    {"dynasty":"明","grade":"六等材","size":"157×105","unit":"mm","building":"一般殿宇"},
+    {"dynasty":"清","grade":"四等材","size":"144×96","unit":"mm","building":"故宫太和殿"},
+    {"dynasty":"清","grade":"五等材","size":"132×89","unit":"mm","building":"故宫乾清宫"},
+    {"dynasty":"清","grade":"六等材","size":"120×80","unit":"mm","building":"普通殿宇"},
+    {"dynasty":"清","grade":"七等材","size":"105×70","unit":"mm","building":"小式建筑"},
+    {"dynasty":"清","grade":"八等材","size":"90×60","unit":"mm","building":"垂花门等"},
+    {"dynasty":"清","grade":"九等材","size":"75×50","unit":"mm","building":"藻井装修"},
+    {"dynasty":"清","grade":"十等材","size":"60×40","unit":"mm","building":"小装修"},
+    {"dynasty":"清","grade":"十一等材","size":"45×30","unit":"mm","building":"藻井小斗"}
+],
+gongquan: {
+   "bridges": [
+    {"name":"赵州桥(安济桥)","dynasty":"隋","span":37.37,"totalLength":50.82,"riseSpanRatio":0.195,"desc":"世界现存最早敞肩石拱桥，敞肩拱世界首创"},
+    {"name":"卢沟桥","dynasty":"金","span":21,"totalLength":266.5,"riseSpanRatio":0.48,"desc":"十一孔联拱石桥，桥上石狮501只"},
+    {"name":"洛阳桥(万安桥)","dynasty":"北宋","span":"-","totalLength":834,"riseSpanRatio":"-","desc":"中国现存最早的跨海梁式石桥，牡蛎固基法"},
+    {"name":"广济桥(湘子桥)","dynasty":"宋/明","span":"-","totalLength":518,"riseSpanRatio":"-","desc":"世界最早的启闭式桥梁，十八梭船二十四洲"},
+    {"name":"宝带桥","dynasty":"唐","span":4,"totalLength":317,"riseSpanRatio":0.75,"desc":"中国现存最长多孔石拱桥，薄墩联拱技术"},
+    {"name":"十七孔桥","dynasty":"清","span":8,"totalLength":150,"riseSpanRatio":0.6,"desc":"颐和园内最大石桥，桥栏石狮544只"},
+    {"name":"灞桥","dynasty":"汉/清","span":6,"totalLength":400,"riseSpanRatio":0.5,"desc":"中国古代著名石拱桥，灞桥折柳典故出处"},
+    {"name":"安平桥","dynasty":"南宋","span":"-","totalLength":2255,"riseSpanRatio":"-","desc":"中国古代最长石梁桥，天下无桥长此桥"},
+    {"name":"小商桥","dynasty":"隋","span":12.1,"totalLength":21.3,"riseSpanRatio":0.253,"desc":"比赵州桥更早的敞肩石拱桥"},
+    {"name":"永通桥","dynasty":"金","span":26,"totalLength":32,"riseSpanRatio":0.2,"desc":"仿赵州桥建造，单孔敞肩石拱桥"},
+    {"name":"虹桥","dynasty":"宋","span":20,"totalLength":25,"riseSpanRatio":0.25,"desc":"木拱桥代表，编木拱桥技术，清明上河图原型"},
+    {"name":"北涧桥","dynasty":"清","span":20,"totalLength":42,"riseSpanRatio":0.3,"desc":"木拱廊桥代表，编木拱结构，廊屋覆盖"},
+    {"name":"溪东桥","dynasty":"明","span":26,"totalLength":40,"riseSpanRatio":0.27,"desc":"木拱廊桥，编木拱结构"},
+    {"name":"三条桥","dynasty":"宋","span":15,"totalLength":26,"riseSpanRatio":0.27,"desc":"现存最古老的木拱廊桥之一"},
+    {"name":"鸾峰桥","dynasty":"明","span":37.6,"totalLength":48,"riseSpanRatio":0.24,"desc":"全国单拱跨径最大的木拱桥"},
+    {"name":"万安桥(屏南)","dynasty":"宋","span":12,"totalLength":98.2,"riseSpanRatio":0.33,"desc":"最长的木拱廊桥，六孔五墩"},
+    {"name":"泸定桥","dynasty":"清","span":100,"totalLength":103,"riseSpanRatio":"-","desc":"铁索桥代表，13根铁链，红军飞夺泸定桥发生地"},
+    {"name":"霁虹桥","dynasty":"明","span":60,"totalLength":80,"riseSpanRatio":"-","desc":"古代南方丝路要道，铁索桥"},
+    {"name":"盘江桥","dynasty":"明","span":70,"totalLength":85,"riseSpanRatio":"-","desc":"西南交通要道铁索桥"},
+    {"name":"彩虹桥","dynasty":"宋","span":12,"totalLength":140,"riseSpanRatio":0.33,"desc":"婺源廊桥代表，四墩五孔"},
+    {"name":"鱼沼飞梁","dynasty":"宋","span":8,"totalLength":18,"riseSpanRatio":0.38,"desc":"十字形石桥，中国现存最早的十字桥"},
+    {"name":"金水桥","dynasty":"明","span":5,"totalLength":20,"riseSpanRatio":0.4,"desc":"故宫内汉白玉石桥，五座单孔拱桥"},
+    {"name":"断桥","dynasty":"唐","span":8,"totalLength":20,"riseSpanRatio":0.38,"desc":"西湖著名景点，单孔石拱桥，白蛇传典故出处"},
+    {"name":"苏堤六桥","dynasty":"宋","span":8,"totalLength":15,"riseSpanRatio":0.42,"desc":"苏堤上六座单孔石拱桥，西湖十景核心景观"}
+],
+    "zhaozhouqiao": {"span":37.37,"riseSpanRatio":0.195,"archHeight":7.28,"history":1400,"desc":"世界桥梁史上的奇迹，敞肩拱技术开创者"}
+}
+        
+,
+            funFacts: [
+                "榫卯结构起源于距今约7000年前的河姆渡文化时期，比文字出现还要早。",
+                "斗拱在唐代主要作为结构构件，到清代逐渐演变为纯装饰构件，体现了建筑技术的演变。",
+                "赵州桥的敞肩拱设计比欧洲早了整整1200年，被誉为世界桥梁史上的奇迹。",
+                "故宫太和殿的斗拱共有11踩，是现存古建筑中斗拱层数最多的。",
+                "应县木塔完全采用榫卯结构，历经千年地震、战火依然屹立。",
+                "《营造法式》记载了8种材等，规定了不同规模建筑的标准用材。",
+                "福建土楼的榫卯结构使其具有优异的抗震性能，可抵御7级以上地震。"
+            ]
+        };
+        var MARKER_ZOOM_THRESHOLD = 5;
+        // ===== 自动为所有建筑生成图片列表（1.jpg ~ 10.jpg）=====
+if (DATA && Array.isArray(DATA.buildings)) {
+    DATA.buildings.forEach(function(b) {
+        b.images = [];
+        // 假设图片扩展名为 .jpg，如实际有 .jpeg 或 .png，可在此修改
+        for (var i = 1; i <= 10; i++) {
+            b.images.push(i + '.jpg');
+        }
+    });
+}
+        // ====================== 全局变量 ======================
+        let map, markers = [];
+        let filteredBuildings = [...DATA.buildings];
+                const DYNASTY_ORDER = ['隋', '唐', '宋', '明', '清'];
+        let currentDynasty = '全部';
+        let timelineChart, strengthChart, countChart;
+        // countChart 原始绝对数量数据（按数据集顺序：榫卯、斗拱、拱券）
+        const COUNT_CHART_ORIG = [
+            [2,15,28,3], // 榫卯
+            [8,3,2,1],   // 斗拱
+            [0,0,0,16]   // 拱券
+        ];
+        let countChartMode = 'absolute'; // 'absolute' or 'percent'
+        
+               const DYNASTY_SUMMARIES = {
+            '全部': '中国古代建筑结构从隋到清，经历了从雄浑到精致、从结构主导到装饰主导的演变过程。',
+            '隋': '隋代开创了大兴城、洛阳城宏大规划，赵州桥展现了拱券技术的巅峰，为唐代建筑盛世奠定基础。',
+            '唐': '唐代建筑结构雄浑大气，斗拱硕大，出檐深远，强调结构的功能性与稳定性。现存南禅寺、佛光寺。',
+            '宋': '宋代建筑结构趋于精致，斗拱比例缩小，装饰性增强，《营造法式》确立了规范的用材制度。',
+            '明': '明代建筑结构严谨，斗拱进一步装饰化，官式建筑体系成熟，用料规范统一。',
+            '清': '清代建筑结构精巧，斗拱成为纯粹的装饰构件，装饰繁复，风格华丽。'
+        };
+        // ====================== 初始化函数 ======================
+        // 获取当前页面所在目录的 base URL，兼容直接打开 HTML（file://）和 Live Server（http）
+        function getBaseUrl() {
+            var h = window.location.href;
+            var i = h.lastIndexOf('/');
+            return i >= 0 ? h.substring(0, i + 1) : '';
+        }
+        function createPopupContent(building) {
+    // 特例：为泸定桥与灞桥显示 images 文件夹内照片，使用 base URL 确保直接打开 HTML 也能加载
+    var base = getBaseUrl();
+    
+
+    const prefix = `图标图片/${encodeURIComponent(building.name)}/`;
+    const total = (building.images && building.images.length) ? building.images.length : 0;
+
+    let carouselHtml = '';
+    if (total === 0) {
+        carouselHtml = '<div style="text-align:center; padding:10px;">暂无图片</div>';
+    } else {
+        // 使用已有样式 popup-carousel 和 carousel-btn，并缩小图片高度
+        carouselHtml = `
+            <div class="popup-carousel" style="min-height:60px;">
+                <button type="button" class="carousel-btn carousel-prev" aria-label="上一张">‹</button>
+                <div class="carousel-img-wrap" style="min-height:60px;">
+                    <img class="popup-current-img" src="" style="max-height:100px;">
+                </div>
+                <button type="button" class="carousel-btn carousel-next" aria-label="下一张">›</button>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="building-detail-popup">
+            <div class="popup-name" style="font-weight:600; font-size:16px; color:#2c4a52;">${building.name}</div>
+            <div class="popup-structure" style="color:#5a7a8a; margin-bottom:8px;">${building.dynasty} · ${building.structure}</div>
+            <div class="popup-desc" style="font-size:13px; margin-bottom:12px;">${building.desc}</div>
+            ${carouselHtml}
+            <button class="btn-3d" onclick="openViewer3d('${building.structure}', {building: ${JSON.stringify(building).replace(/"/g, '&quot;')}})" 
+                    style="display:block; width:100%; padding:8px; background:#50768E; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+                查看3D模型
+            </button>
+        </div>
+    `;
+}
+               function initMap() {
+            map = L.map('map').setView([35.8617, 104.1954], 4);
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { attribution: '&copy; 高德地图', opacity: 0.8 }).addTo(map);
+            addMarkers(DATA.buildings);
+            map.on('zoomend', updateMarkerIcons);
+            
+            // 添加图例
+            setTimeout(() => {
+                const mapEl = document.getElementById('map');
+                if (mapEl && !mapEl.querySelector('.map-legend')) {
+                    const div = document.createElement('div');
+                    div.className = 'map-legend';
+                    div.innerHTML = `
+                        <div class="map-legend-item"><span class="map-legend-dot dougong"></span><span>斗拱结构</span></div>
+                        <div class="map-legend-item"><span class="map-legend-dot sunmao"></span><span>榫卯结构</span></div>
+                        <div class="map-legend-item"><span class="map-legend-dot gongquan"></span><span>拱券结构</span></div>
+                    `;
+                    mapEl.appendChild(div);
+                }
+            }, 500);
+            
+            // 添加提示
+            setTimeout(() => {
+                const mapEl = document.getElementById('map');
+                if (mapEl && !mapEl.querySelector('.map-hint')) {
+                    const div = document.createElement('div');
+                    div.className = 'map-hint';
+                    div.textContent = '单击点位可查看详情与 3D 模型';
+                    mapEl.appendChild(div);
+                }
+            }, 500);
+        }
+
+       function createMarkerIcon(building, zoom) {
+    const color = building.structure === '榫卯' ? '#997A5B' 
+                : building.structure === '斗拱' ? '#50768E' 
+                : '#B4463C';
+
+    // === 图标尺寸参数（可在此调整） ===
+    const ICON_SIZE_LARGE = 32; // 放大后自定义图标整体大小（直径，px）
+    const ICON_SIZE_SMALL = 16; // 缩小状态下默认圆点大小（直径，px）
+
+    if (zoom >= MARKER_ZOOM_THRESHOLD && building.name) {
+        const iconPath = `图标图片/${building.name}/图标.png`;
+        const html = `
+            <img src="${iconPath}"
+                 style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+                 onerror="this.onerror=null; this.parentNode.innerHTML='<span class=&quot;marker-dot&quot; style=&quot;background-color:${color};width:${ICON_SIZE_SMALL}px;height:${ICON_SIZE_SMALL}px;&quot;></span>';">
+        `;
+        return L.divIcon({
+            html: html,
+            iconSize: [ICON_SIZE_LARGE, ICON_SIZE_LARGE],
+            className: 'building-marker-icon'
+        });
+    }
+
+    // 默认圆点（无单独图标图片时，缩小状态）
+    return L.divIcon({
+        html: '<span class="marker-dot" style="background-color:' + color + ';width:' + ICON_SIZE_SMALL + 'px;height:' + ICON_SIZE_SMALL + 'px;"></span>',
+        iconSize: [ICON_SIZE_SMALL, ICON_SIZE_SMALL],
+        iconAnchor: [ICON_SIZE_SMALL / 2, ICON_SIZE_SMALL / 2],
+        className: 'building-marker-dot'
+    });
+}
+        function updateMarkerIcons() {
+            if (!map || !map.getZoom) return;
+            const zoom = map.getZoom();
+            markers.forEach(m => { if (m._building) m.setIcon(createMarkerIcon(m._building, zoom)); });
+        }
+
+             function addMarkers(data) {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    const zoom = map ? map.getZoom() : 4;
+    data.forEach(b => {
+        const marker = L.marker([b.lat, b.lng], { icon: createMarkerIcon(b, zoom) }).addTo(map);
+        marker._building = b;
+        marker.bindPopup(createPopupContent(b), {
+    maxWidth: 450,  // 放大弹窗最大宽度，可自定义数值
+    minWidth: 320,  // 设置最小宽度，保证图片有足够显示空间
+    autoPan: true,
+    autoPanPadding: [20, 20]
+});
+        bindPopupOpenEvent(marker);   // ✅ 新增：绑定图片检测逻辑
+        markers.push(marker);
+    });
+}
+function bindPopupOpenEvent(marker) {
+    marker.on('popupopen', function(e) {
+        var popup = e.popup;
+        var container = popup.getElement();
+        if (!container) return;
+
+        var building = this._building;
+        if (!building) return;
+
+        // 相对路径，兼容直接打开 HTML（file://）和 Live Server（http）
+        var prefix = '图标图片/' + building.name + '/';
+        var images = building.images || [];
+
+        var imgEl = container.querySelector('.popup-current-img');
+        var prevBtn = container.querySelector('.carousel-prev');
+        var nextBtn = container.querySelector('.carousel-next');
+        if (!imgEl || !prevBtn || !nextBtn) return;
+
+        var validImages = [];
+        var currentIdx = 0;
+
+        // 立即尝试显示第一张图，不依赖异步检测，本地打开时也能显示
+        if (images.length > 0) {
+            imgEl.src = prefix + images[0];
+            imgEl.style.display = '';
+            imgEl.onerror = function() {
+                imgEl.onerror = null;
+                imgEl.style.display = 'none';
+                var wrap = imgEl.closest('.carousel-img-wrap');
+                if (wrap && !wrap.querySelector('.popup-no-img')) {
+                    var p = document.createElement('div');
+                    p.className = 'popup-no-img';
+                    p.style.cssText = 'text-align:center;padding:10px;color:#5a7a8a;font-size:13px;';
+                    p.textContent = '暂无图片';
+                    wrap.appendChild(p);
+                }
+            };
+        }
+
+        // 异步检测可用的图片列表，供上一张/下一张使用
+        images.forEach(function(fileName) {
+            var testImg = new Image();
+            testImg.onload = function() {
+                validImages.push(fileName);
+            };
+            testImg.onerror = function() {};
+            testImg.src = prefix + fileName;
+        });
+
+        function showImage(index) {
+            var placeholder = container.querySelector('.popup-no-img');
+            var list = validImages.length > 0 ? validImages : images;
+            if (list.length === 0) {
+                imgEl.src = '';
+                imgEl.style.display = 'none';
+                if (placeholder) placeholder.style.display = '';
+                return;
+            }
+            if (placeholder) placeholder.style.display = 'none';
+            imgEl.style.display = '';
+            currentIdx = (index + list.length) % list.length;
+            imgEl.src = prefix + list[currentIdx];
+        }
+
+        // 防止重复绑定事件
+        prevBtn.replaceWith(prevBtn.cloneNode(true));
+        nextBtn.replaceWith(nextBtn.cloneNode(true));
+        var newPrevBtn = container.querySelector('.carousel-prev');
+        var newNextBtn = container.querySelector('.carousel-next');
+        if (newPrevBtn) {
+            newPrevBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                showImage(currentIdx - 1);
+            });
+        }
+        if (newNextBtn) {
+            newNextBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                showImage(currentIdx + 1);
+            });
+        }
+    });
+}
+               function renderBuildingList() {
+            document.getElementById('building-count').textContent = `共 ${filteredBuildings.length} 处建筑`;
+            const listHtml = filteredBuildings.map(b => {
+                const badgeClass = b.structure === '榫卯' ? 'badge-sunmao' : b.structure === '斗拱' ? 'badge-dougong' : 'badge-gongquan';
+                return `<div class="building-item" onclick="focusBuilding(${b.lat},${b.lng})"><h4>${b.name}</h4><div class="meta">${b.province} · ${b.dynasty}</div><span class="badge ${badgeClass}">${b.structure}</span></div>`;
+            }).join('');
+            document.getElementById('building-list').innerHTML = listHtml;
+        }
+
+        function focusBuilding(lat, lng) { map.setView([lat, lng], 10); }
+
+                function filterBuildings() {
+            const dynasty = document.getElementById('dynasty-filter').value;
+            const type = document.getElementById('type-filter').value;
+            const structure = document.getElementById('structure-filter').value;
+            
+            filteredBuildings = DATA.buildings.filter(b => {
+                return (dynasty === '全部' || b.dynasty.includes(dynasty)) &&
+                       (type === '全部' || b.type === type) &&
+                       (structure === '全部' || b.structure === structure);
+            });
+            
+            addMarkers(filteredBuildings);
+            renderBuildingList();
+            document.getElementById('currentDynastyDisplay').textContent = dynasty;
+            updateChartsByDynasty(dynasty);
+        }
+        // ====================== 时间轴联动 ======================
+        function initTimeline() {
+            const slider = document.getElementById('dynasty-slider');
+            const markers = document.querySelectorAll('.timeline-markers .marker');
+            const summaryCard = document.getElementById('dynasty-summary');
+
+                         function updateAll(dynasty) {
+                // 更新摘要
+                summaryCard.innerHTML = `<h4>${dynasty}</h4><p>${DYNASTY_SUMMARIES[dynasty] || DYNASTY_SUMMARIES['全部']}</p>`;
+                
+                // 更新筛选器
+                document.getElementById('dynasty-filter').value = dynasty;
+                document.getElementById('currentDynastyDisplay').textContent = dynasty;
+                
+                // 更新地图
+                const dynastyIndex = DYNASTY_ORDER.indexOf(dynasty);
+                const allowedDynasties = dynastyIndex >= 0 ? DYNASTY_ORDER.slice(0, dynastyIndex + 1) : DYNASTY_ORDER;
+                filteredBuildings = DATA.buildings.filter(b => allowedDynasties.includes(b.dynasty));
+                addMarkers(filteredBuildings);
+                renderBuildingList();
+                
+                // 更新图表
+                updateChartsByDynasty(dynasty);
+                
+                // 更新标记点活跃状态
+                markers.forEach(m => m.classList.toggle('active', m.dataset.dynasty === dynasty));
+            }
+            slider.addEventListener('input', function() {
+                const dynasty = DYNASTY_ORDER[parseInt(this.value)];
+                updateAll(dynasty);
+            });
+
+            markers.forEach(marker => {
+                marker.addEventListener('click', function() {
+                    const dynasty = this.dataset.dynasty;
+                    const index = DYNASTY_ORDER.indexOf(dynasty);
+                    slider.value = index;
+                    updateAll(dynasty);
+                });
+            });
+        }
+
+        // ====================== 图表初始化 ======================
+        function initCharts() {
+             const ctx1 = document.getElementById('timelineChart').getContext('2d');
+            timelineChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['隋', '唐', '宋', '明', '清'],
+                    datasets: [
+                        { label: '榫卯建筑数量', data: [2, 8, 15, 25, 30], borderColor: '#997A5B', backgroundColor: 'rgba(153,122,91,0.1)', tension: 0.3 },
+                        { label: '斗拱建筑数量', data: [1, 12, 20, 18, 22], borderColor: '#50768E', backgroundColor: 'rgba(80,118,142,0.1)', tension: 0.3 },
+                        { label: '拱券建筑数量', data: [3, 5, 8, 12, 15], borderColor: '#B4463C', backgroundColor: 'rgba(180,70,60,0.1)', tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { tooltip: { enabled: true, mode: 'index' }, legend: { position: 'top' } }
+                }
+            });
+            const ctx2 = document.getElementById('strengthChart').getContext('2d');
+            strengthChart = new Chart(ctx2, {
+                type: 'radar',
+                data: {
+                    labels: ['抗拉', '抗剪', '抗震', '抗压', '耐久性'],
+                    datasets: [
+                        { label: '榫卯', data: [95, 85, 90, 70, 88], borderColor: '#997A5B', backgroundColor: 'rgba(153,122,91,0.2)' },
+                        { label: '斗拱', data: [75, 70, 85, 80, 82], borderColor: '#50768E', backgroundColor: 'rgba(80,118,142,0.2)' },
+                        { label: '拱券', data: [60, 55, 70, 95, 92], borderColor: '#B4463C', backgroundColor: 'rgba(180,70,60,0.2)' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { enabled: true } } }
+            });
+
+            const ctx3 = document.getElementById('countChart').getContext('2d');
+
+            // 自定义数据标签插件（在柱子上方绘制数值）
+            const barDataLabels = {
+                id: 'barDataLabels',
+                afterDatasetsDraw(chart, args, options) {
+                    const ctx = chart.ctx;
+                    chart.data.datasets.forEach((dataset, dsIndex) => {
+                        const meta = chart.getDatasetMeta(dsIndex);
+                        meta.data.forEach((bar, index) => {
+                            const val = dataset.data[index];
+                            if (val === null || val === undefined) return;
+                            const x = bar.x;
+                            const y = bar.y - 6;
+                            ctx.save();
+                            ctx.fillStyle = '#2c4a52';
+                            ctx.font = '12px "Noto Serif SC", serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(val, x, y);
+                            ctx.restore();
+                        });
+                    });
+                }
+            };
+
+            countChart = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: ['宫殿', '官府', '民居', '桥梁'],
+                    datasets: [
+                        { label: '榫卯', data: COUNT_CHART_ORIG[0].slice(), backgroundColor: '#997A5B' },
+                        { label: '斗拱', data: COUNT_CHART_ORIG[1].slice(), backgroundColor: '#50768E' },
+                        { label: '拱券', data: COUNT_CHART_ORIG[2].slice(), backgroundColor: '#B4463C' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: '不同类型建筑的结构分布对比', font: { size: 14, family: 'ZCOOL XiaoWei, serif' } },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                title: function(items) { return items && items[0] ? items[0].label : ''; },
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const typeLabel = context.label || '';
+                                    // 查找原始绝对值以便在百分比模式依然显示绝对数
+                                    const dsIndex = context.datasetIndex;
+                                    const origVal = COUNT_CHART_ORIG[dsIndex][context.dataIndex] || 0;
+                                    // 计算百分比
+                                    const colSum = COUNT_CHART_ORIG.reduce((s, d) => s + (d[context.dataIndex]||0), 0);
+                                    const pct = colSum ? Math.round((origVal / colSum) * 100) : 0;
+                                    return `${typeLabel} 建筑中，${datasetLabel} 结构有 ${origVal} 座 (${pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(evt, elements) {
+                        if (!elements || elements.length === 0) return;
+                        const el = elements[0];
+                        const dsIdx = el.datasetIndex;
+                        const idx = el.index;
+                        const structure = countChart.data.datasets[dsIdx].label;
+                        const type = countChart.data.labels[idx];
+                        // 设置筛选器并触发筛选
+                        const typeSel = document.getElementById('type-filter');
+                        const structSel = document.getElementById('structure-filter');
+                        if (typeSel) typeSel.value = type;
+                        if (structSel) structSel.value = structure;
+                        filterBuildings();
+                    },
+                    scales: {
+                        x: { stacked: false },
+                        y: { beginAtZero: true }
+                    }
+                },
+                plugins: [barDataLabels]
+            });
+
+            // 切换视图按钮绑定
+            const toggleBtn = document.getElementById('countViewToggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    if (countChartMode === 'absolute') {
+                        setCountChartMode('percent');
+                        this.textContent = '切换到绝对数量视图';
+                    } else {
+                        setCountChartMode('absolute');
+                        this.textContent = '切换到百分比视图';
+                    }
+                });
+            }
+
+            // 初始化为绝对数量显示
+            function setCountChartMode(mode) {
+                countChartMode = mode;
+                const modeLabel = document.getElementById('countViewMode');
+                if (mode === 'percent') {
+                    // 计算每列的总和并替换为百分比数值
+                    const cols = COUNT_CHART_ORIG[0].length;
+                    const newData = COUNT_CHART_ORIG.map(row => row.slice());
+                    for (let i = 0; i < cols; i++) {
+                        const colSum = COUNT_CHART_ORIG.reduce((s, r) => s + (r[i]||0), 0);
+                        for (let r = 0; r < COUNT_CHART_ORIG.length; r++) {
+                            newData[r][i] = colSum ? Math.round((COUNT_CHART_ORIG[r][i] / colSum) * 100) : 0;
+                        }
+                    }
+                    countChart.data.datasets.forEach((ds, di) => { ds.data = newData[di].slice(); });
+                    countChart.options.scales.y.max = 100;
+                    if (modeLabel) modeLabel.textContent = '百分比';
+                } else {
+                    // 恢复原始绝对数量
+                    countChart.data.datasets.forEach((ds, di) => { ds.data = COUNT_CHART_ORIG[di].slice(); });
+                    countChart.options.scales.y.max = undefined;
+                    if (modeLabel) modeLabel.textContent = '绝对数量';
+                }
+                countChart.update();
+            }
+            // 暴露切换函数以防外部调用
+            window.setCountChartMode = setCountChartMode;
+        }
+
+        function updateChartsByDynasty(dynasty) {
+            // 根据朝代更新图表数据（模拟联动效果）
+            if (dynasty === '全部') {
+                timelineChart.data.datasets[0].data = [8, 15, 12, 25, 30];
+                timelineChart.data.datasets[1].data = [12, 20, 10, 18, 22];
+                timelineChart.data.datasets[2].data = [5, 8, 6, 12, 15];
+            } else {
+                const idx = DYNASTY_ORDER.indexOf(dynasty);
+                const factor = [1.2, 1.1, 1.0, 1.3, 1.4][idx] || 1;
+                timelineChart.data.datasets.forEach(ds => {
+                    ds.data = ds.data.map((v, i) => i <= idx ? Math.round(v * 1.2) : Math.round(v * 0.8));
+                });
+            }
+            timelineChart.update();
+        }
+
+        // ====================== 趣味小知识 ======================
+        function refreshFunFact() {
+            const facts = DATA.funFacts || [
+                 "榫卯结构起源于距今约7000年前的河姆渡文化时期，比文字出现还要早。",
+                "斗拱在唐代主要作为结构构件，到清代逐渐演变为纯装饰构件，体现了建筑技术的演变。",
+                "赵州桥的敞肩拱设计比欧洲早了整整1200年，被誉为世界桥梁史上的奇迹。",
+                "故宫太和殿的斗拱共有11踩，是现存古建筑中斗拱层数最多的。",
+                "应县木塔完全采用榫卯结构，历经千年地震、战火依然屹立。",
+                "《营造法式》记载了8种材等，规定了不同规模建筑的标准用材。",
+                "隋代大兴城（唐长安城前身）是世界上最大的古代城市，面积达84平方公里。"
+                
+            ];
+            const randomFact = facts[Math.floor(Math.random() * facts.length)];
+            document.getElementById('funFactText').textContent = randomFact;
+        }
+// 轮播图控制函数
+
+
+
+        // ====================== 参数调节函数 ======================
+        function renderSunmaoTypes() {
+            const container = document.getElementById('sunmao-type-list');
+            if (!container) return;
+            container.innerHTML = DATA.sunmao.map(t => 
+                `<div class="sunmao-type"><h4>${t.name}</h4><p>${t.desc}</p></div>`
+            ).join('') + '<p style="margin-top:14px;"><button class="tab-btn" onclick="openViewer3d(\'榫卯\')">查看 3D 模型</button></p>';
+        }
+
+        function renderDougongTable() {
+            const tbody = document.querySelector('#dougong-table tbody');
+            if (tbody) tbody.innerHTML = DATA.dougong.map(d => 
+                `<tr><td>${d.dynasty}</td><td>${d.grade}</td><td>${d.size}</td><td>${d.building}</td></tr>`
+            ).join('');
+        }
+
+        function renderGongquanTable() {
+            const tbody = document.querySelector('#gongquan-table tbody');
+            if (tbody) tbody.innerHTML = DATA.gongquan.bridges.map(b => 
+                `<tr><td>${b.name}</td><td>${b.dynasty}</td><td>${b.span}</td><td>${b.totalLength}</td><td>${b.riseSpanRatio}</td></tr>`
+            ).join('');
+        }
+
+        // 榫卯滑块逻辑
+        const smLen = document.getElementById('sm-length');
+        const smWid = document.getElementById('sm-width');
+        const smDep = document.getElementById('sm-depth');
+        const lenSpan = document.getElementById('sm-length-val');
+        const widSpan = document.getElementById('sm-width-val');
+        const depSpan = document.getElementById('sm-depth-val');
+        const tensileNum = document.getElementById('tensile-num');
+        const shearNum = document.getElementById('shear-num');
+        const stressNode = document.getElementById('stress-node');
+        const stressTenon = document.getElementById('stress-tenon');
+        const stressMortise = document.getElementById('stress-mortise');
+        const nodeStressVal = document.getElementById('node-stress-val');
+
+        let ctxT = document.getElementById('gauge-tensile').getContext('2d');
+        let ctxS = document.getElementById('gauge-shear').getContext('2d');
+        let chartT = new Chart(ctxT, {type:'bar', data:{labels:['抗拉'], datasets:[{data:[12.5], backgroundColor:'#50768E'}]}, options:{responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:30}} }});
+        let chartS = new Chart(ctxS, {type:'bar', data:{labels:['抗剪'], datasets:[{data:[8.5], backgroundColor:'#BF7E4A'}]}, options:{responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:30}} }});
+
+        function updateSunmao() {
+            let l = parseFloat(smLen.value), w = parseFloat(smWid.value), d = parseFloat(smDep.value);
+            lenSpan.textContent = l; widSpan.textContent = w; depSpan.textContent = d;
+            
+            let tensile = Math.min(30, Math.round((l * w / 2500) * 12.5 * 10) / 10);
+            let shear = Math.min(30, Math.round((w * d / 600) * 8.5 * 10) / 10);
+            tensileNum.textContent = tensile; shearNum.textContent = shear;
+            chartT.data.datasets[0].data = [tensile]; chartT.update();
+            chartS.data.datasets[0].data = [shear]; chartS.update();
+            
+            let nodeStress = Math.min(20, Math.round(((l / d) * 3.0 + 2.5) * 10) / 10);
+            let tenonStress = Math.min(20, Math.round((w / 10) * 2.2 * 10) / 10);
+            let mortiseStress = Math.min(20, Math.round((d / 20) * 1.8 * 10) / 10);
+            
+            stressNode.style.height = (nodeStress * 5) + 'px';
+            stressTenon.style.height = (tenonStress * 5) + 'px';
+            stressMortise.style.height = (mortiseStress * 5) + 'px';
+            stressNode.setAttribute('data-label', nodeStress.toFixed(1));
+            stressTenon.setAttribute('data-label', tenonStress.toFixed(1));
+            stressMortise.setAttribute('data-label', mortiseStress.toFixed(1));
+            nodeStressVal.textContent = nodeStress;
+        }
+        smLen.addEventListener('input', updateSunmao);
+        smWid.addEventListener('input', updateSunmao);
+        smDep.addEventListener('input', updateSunmao);
+        updateSunmao();
+
+        // 斗拱滑块
+        const dgLayers = document.getElementById('dg-layers');
+        const dgGrade = document.getElementById('dg-grade');
+        const dgLayersVal = document.getElementById('dg-layers-val');
+        const dgGradeVal = document.getElementById('dg-grade-val');
+        const dgLoadNum = document.getElementById('dg-load-num');
+        const dgStabNum = document.getElementById('dg-stab-num');
+        const dgStressArch = document.getElementById('dg-stress-arch');
+        const dgStressDou = document.getElementById('dg-stress-dou');
+        const dgStressAng = document.getElementById('dg-stress-ang');
+
+        let ctxLoad = document.getElementById('gauge-dg-load').getContext('2d');
+        let ctxStab = document.getElementById('gauge-dg-stability').getContext('2d');
+        let chartLoad = new Chart(ctxLoad, {type:'bar', data:{labels:['承重'], datasets:[{data:[108], backgroundColor:'#50768E'}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:300}} }});
+        let chartStab = new Chart(ctxStab, {type:'bar', data:{labels:['抗震'], datasets:[{data:[0.72], backgroundColor:'#997A5B'}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:1.5}} }});
+
+        function updateDougong() {
+            let layers = parseInt(dgLayers.value), grade = parseInt(dgGrade.value);
+            dgLayersVal.textContent = layers; dgGradeVal.textContent = grade;
+            let load = Math.min(350, Math.round(30 * layers + 15 * (8 - grade)));
+            let stability = Math.min(1.4, Math.round((0.5 + layers * 0.03 + 1/grade) * 100) / 100);
+            dgLoadNum.textContent = load; dgStabNum.textContent = stability;
+            chartLoad.data.datasets[0].data = [load]; chartLoad.update();
+            chartStab.data.datasets[0].data = [stability]; chartStab.update();
+            
+            dgStressArch.style.height = (load/3) + 'px'; dgStressArch.setAttribute('data-label', Math.round(load/3)+'MPa');
+            dgStressDou.style.height = (load/5) + 'px'; dgStressDou.setAttribute('data-label', Math.round(load/5)+'MPa');
+            dgStressAng.style.height = (load/2.5) + 'px'; dgStressAng.setAttribute('data-label', Math.round(load/2.5)+'MPa');
+        }
+        dgLayers.addEventListener('input', updateDougong);
+        dgGrade.addEventListener('input', updateDougong);
+        updateDougong();
+
+        // 拱券滑块
+        const gqRise = document.getElementById('gq-rise');
+        const gqSpan = document.getElementById('gq-span');
+        const gqRiseVal = document.getElementById('gq-rise-val');
+        const gqSpanVal = document.getElementById('gq-span-val');
+        const thrustNum = document.getElementById('thrust-num');
+        const capacityNum = document.getElementById('capacity-num');
+        const gqStressArch = document.getElementById('gq-stress-arch');
+        const gqStressAbut = document.getElementById('gq-stress-abut');
+
+        let ctxThrust = document.getElementById('gauge-thrust').getContext('2d');
+        let ctxCap = document.getElementById('gauge-capacity').getContext('2d');
+        let chartThrust = new Chart(ctxThrust, {type:'bar', data:{labels:['推力'], datasets:[{data:[185], backgroundColor:'#B4463C'}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:600}} }});
+        let chartCap = new Chart(ctxCap, {type:'bar', data:{labels:['承载'], datasets:[{data:[420], backgroundColor:'#50768E'}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:1000}} }});
+
+        function updateGongquan() {
+            let rise = parseFloat(gqRise.value), span = parseFloat(gqSpan.value);
+            gqRiseVal.textContent = rise.toFixed(2); gqSpanVal.textContent = span.toFixed(2);
+            let thrust = Math.min(600, Math.round(200 * (span / rise) * 0.3));
+            let capacity = Math.min(1000, Math.round(span * 12 + rise * 30));
+            thrustNum.textContent = thrust; capacityNum.textContent = capacity;
+            chartThrust.data.datasets[0].data = [thrust]; chartThrust.update();
+            chartCap.data.datasets[0].data = [capacity]; chartCap.update();
+            
+            gqStressArch.style.height = (capacity/15) + 'px'; gqStressArch.setAttribute('data-label', Math.round(capacity/15)+'MPa');
+            gqStressAbut.style.height = (thrust/8) + 'px'; gqStressAbut.setAttribute('data-label', Math.round(thrust/8)+'MPa');
+        }
+        gqRise.addEventListener('input', updateGongquan);
+        gqSpan.addEventListener('input', updateGongquan);
+        updateGongquan();
+
+        // ====================== 标签页切换（兼容主流浏览器） ======================
+        window.showTab = function(tab, btnEl) {
+            document.querySelectorAll('.tab-content').forEach(function (el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-btn').forEach(function (el) { el.classList.remove('active'); });
+            var tabPanel = document.getElementById(tab + '-tab');
+            if (tabPanel) tabPanel.classList.add('active');
+            if (btnEl && btnEl.classList) btnEl.classList.add('active');
+            if (tab === 'map' && map) setTimeout(function () { map.invalidateSize(); }, 100);
+        };
+
+        // ====================== 3D模型 ======================
+      // ====================== 3D建模核心代码 ======================
+// ====================== 3D建模核心代码 ======================
+(function() {
+    // 全局创建纹理加载器
+    const textureLoader = new THREE.TextureLoader();
+    // ========== 你的木质纹理完整路径 ==========
+    // 绝对路径写法：file:///C:/Users/33205/Desktop/111/111/纹理图片/pDjKYM48uA.jpg
+    // 同目录相对路径写法（推荐）：./pDjKYM48uA.jpg
+    // 你的木质纹理完整路径（请根据实际存放位置调整）
+const WOOD_TEXTURE_PATH = '纹理图片/pDjKYM48uA.jpg';
+
+    // 加载木质纹理，添加加载成功/失败兜底逻辑
+    const woodTexture = textureLoader.load(
+        WOOD_TEXTURE_PATH,
+        // 加载成功回调：强制更新纹理+渲染
+        (texture) => {
+            console.log('木质纹理加载成功！', texture);
+            texture.needsUpdate = true;
+            if (renderer && scene) renderer.render(scene, camera);
+        },
+        // 加载进度回调（可选）
+        (xhr) => {
+            console.log('纹理加载进度：', (xhr.loaded / xhr.total * 100) + '%');
+        },
+        // 加载失败回调：报错+颜色兜底，避免模型全黑
+        (err) => {
+            console.error('纹理加载失败！请检查路径/是否开启本地服务器', err);
+            console.log('已自动使用默认木质颜色兜底');
+        }
+    );
+    // 纹理核心配置
+    woodTexture.wrapS = THREE.RepeatWrapping;
+    woodTexture.wrapT = THREE.RepeatWrapping;
+    woodTexture.repeat.set(3, 3); // 数值越大木纹越密，可自行调整
+    woodTexture.anisotropy = 16; // 提升远距离纹理清晰度
+    woodTexture.needsUpdate = true;
+
+    // 注释法线贴图（无对应文件时避免加载报错）
+    const woodNormalMap = null;
+
+    // 榫卯类型描述
+    const SUNMAO_DESC = {
+        '燕尾榫': '榫头呈梯形，拉结力强，常用于地板拼接',
+        '透榫': '贯穿构件，多用于梁柱节点',
+        '搭掌榫': '榫头如手掌，用于水平构件连接',
+        '粽角榫': '常用于桌角、柜角，结构稳固',
+        '格肩榫': '用于横竖材交接，美观且防开裂',
+        '夹头榫': '常见于桌案，牙条与腿足结合紧密'
+    };
+    
+    // 六种榫卯对比数据
+    const SUNMAO_SIX = [
+        { name: '燕尾榫', morph: '梯形榫头、斜面锁合', mechanics: '抗拉强、防脱出', scene: '地板、板类拼接', history: '唐宋沿用至今' },
+        { name: '透榫', morph: '榫头贯穿卯眼', mechanics: '抗剪好、传力直接', scene: '梁柱、大木节点', history: '大式建筑主流' },
+        { name: '搭掌榫', morph: '榫头如掌、搭接', mechanics: '抗弯、易加工', scene: '水平构件连接', history: '民间常用' },
+        { name: '粽角榫', morph: '三向45°斜接、无外露', mechanics: '角部稳固、美观', scene: '桌角、柜角、框角', history: '明清家具典型' },
+        { name: '格肩榫', morph: '横材格肩、竖材开槽', mechanics: '防开裂、应力分散', scene: '横竖材丁字接', history: '宋式已成熟' },
+        { name: '夹头榫', morph: '腿足开槽夹牙条', mechanics: '夹持力大、稳固', scene: '桌案腿足与牙条', history: '案类代表节点' }
+    ];
+
+    const DOUGONG_DESC = { '斗': '承托拱、昂，传递荷载', '拱': '横向出跳，承托上部', '昂': '斜向挑出，杠杆受力' };
+    const GONGQUAN_DESC = {
+        '拱券石': '拱券核心受力构件，传递径向荷载',
+        '拱顶石': '拱券顶部锁芯构件，抵消两侧推力',
+        '桥台': '承托拱券底部，传递竖向荷载到基础',
+        '敞肩小拱': '减少自重，增加泄洪能力，提升抗震性',
+        '联拱桥墩': '联拱结构中，传递拱间推力的关键构件',
+        '薄墩': '薄墩联拱技术，减少水流阻力，增强整体稳定性',
+        '拱肩': '拱肩处的过渡构件，分散应力，提升美观性'
+    };
+
+    // ====================== 模型构建函数 ======================
+    
+    // 1. 榫卯模型构建
+    function buildSunmaoModel(type) {
+        type = type || '燕尾榫';
+        var g = new THREE.Group();
+
+       const woodMat = new THREE.MeshLambertMaterial({ 
+    color: 0xf0e6d2,
+    side: THREE.DoubleSide // 双面渲染，避免模型背面看不到纹理
+});
+const darkWoodMat = new THREE.MeshLambertMaterial({ 
+    color: 0x6b5344,
+    side: THREE.DoubleSide
+});
+const grainMat = new THREE.MeshLambertMaterial({ 
+    color: 0x5c4033,
+    side: THREE.DoubleSide
+});
+
+        var desc = SUNMAO_DESC[type] || '';
+
+        // 燕尾榫
+        if (type === '燕尾榫') {
+            var beam1Geo = new THREE.BoxGeometry(1.5, 0.32, 0.48);
+            var beam1 = new THREE.Mesh(beam1Geo, woodMat);
+            beam1.position.set(-0.38, 0, 0);
+            beam1.userData = { name: '横材', desc: type + '：' + desc };
+            g.add(beam1);
+
+            var beam1End = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.5), darkWoodMat);
+            beam1End.position.set(-1.05, 0, 0);
+            beam1End.userData = { name: '端头', desc: type + '：' + desc };
+            g.add(beam1End);
+
+            var beam2 = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.78, 0.48), woodMat);
+            beam2.position.set(0.48, 0, 0);
+            beam2.userData = { name: '竖材', desc: type + '：' + desc };
+            g.add(beam2);
+
+            var mortiseHole = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.36), darkWoodMat);
+            mortiseHole.position.set(0.14, 0.03, 0);
+            mortiseHole.userData = { name: '卯眼', desc: type + '：' + desc };
+            g.add(mortiseHole);
+
+            var tenon = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.34), darkWoodMat);
+            tenon.position.set(-0.06, -0.02, 0);
+            tenon.userData = { name: '榫头', desc: type + '：' + desc };
+            g.add(tenon);
+
+            var wedge1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.28), grainMat);
+            wedge1.position.set(0.38, -0.18, 0.12);
+            wedge1.rotation.z = 0.12;
+            wedge1.userData = { name: '楔子', desc: '锁紧榫卯节点' };
+            g.add(wedge1);
+
+            var wedge2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.28), grainMat);
+            wedge2.position.set(0.38, -0.18, -0.12);
+            wedge2.rotation.z = 0.12;
+            wedge2.userData = { name: '楔子', desc: '锁紧榫卯节点' };
+            g.add(wedge2);
+
+            var pin = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8), grainMat);
+            pin.rotation.x = Math.PI / 2;
+            pin.position.set(0.1, -0.08, 0);
+            pin.userData = { name: '销钉', desc: '防止脱榫' };
+            g.add(pin);
+        }
+
+        // 透榫
+        else if (type === '透榫') {
+            var beam1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.4), woodMat);
+            beam1.position.set(-0.3, 0, 0);
+            beam1.userData = { name: '横材', desc: type + '：' + desc };
+            g.add(beam1);
+
+            var beam2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), woodMat);
+            beam2.position.set(0.4, 0, 0);
+            beam2.userData = { name: '竖材', desc: type + '：' + desc };
+            g.add(beam2);
+
+            var tenon = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.34), darkWoodMat);
+            tenon.position.set(-0.06, -0.02, 0);
+            tenon.userData = { name: '榫头', desc: type + '：' + desc };
+            g.add(tenon);
+
+            var tenonEnd = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.34), darkWoodMat);
+            tenonEnd.position.set(0.6, -0.02, 0);
+            tenonEnd.userData = { name: '透榫端头', desc: '贯穿构件，增强抗剪' };
+            g.add(tenonEnd);
+        }
+
+        // 搭掌榫
+        else if (type === '搭掌榫') {
+            var beam1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.4), woodMat);
+            beam1.position.set(-0.3, 0, 0);
+            beam1.userData = { name: '横材', desc: type + '：' + desc };
+            g.add(beam1);
+
+            var beam2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), woodMat);
+            beam2.position.set(0.4, 0, 0);
+            beam2.userData = { name: '竖材', desc: type + '：' + desc };
+            g.add(beam2);
+
+            var tenon = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.34), darkWoodMat);
+            tenon.position.set(-0.06, -0.02, 0);
+            tenon.userData = { name: '掌形榫头', desc: '搭接式连接，便于加工' };
+            g.add(tenon);
+
+            var palm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.34), darkWoodMat);
+            palm.position.set(-0.16, -0.02, 0);
+            palm.userData = { name: '掌部', desc: '增大接触面积，提高稳定性' };
+            g.add(palm);
+        }
+
+        // 粽角榫
+        else if (type === '粽角榫') {
+            var beamX = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.28, 0.28), woodMat);
+            beamX.position.set(-0.2, 0, 0);
+            beamX.userData = { name: '横材', desc: type + '：' + desc };
+            g.add(beamX);
+
+            var beamY = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.8, 0.28), woodMat);
+            beamY.position.set(0, 0.2, 0);
+            beamY.userData = { name: '竖材', desc: type + '：' + desc };
+            g.add(beamY);
+
+            var beamZ = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.8), woodMat);
+            beamZ.position.set(0, 0, 0.2);
+            beamZ.userData = { name: '侧材', desc: type + '：' + desc };
+            g.add(beamZ);
+
+            var tenonX = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), darkWoodMat);
+            tenonX.position.set(0.2, 0, 0);
+            tenonX.rotation.y = Math.PI / 4;
+            tenonX.userData = { name: '45°榫头', desc: '三向斜接，无外露' };
+            g.add(tenonX);
+
+            var tenonY = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.28, 0.18), darkWoodMat);
+            tenonY.position.set(0, -0.2, 0);
+            tenonY.rotation.x = Math.PI / 4;
+            tenonY.userData = { name: '45°榫头', desc: '三向斜接，无外露' };
+            g.add(tenonY);
+
+            var tenonZ = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.28), darkWoodMat);
+            tenonZ.position.set(0, 0, -0.2);
+            tenonZ.rotation.z = Math.PI / 4;
+            tenonZ.userData = { name: '45°榫头', desc: '三向斜接，无外露' };
+            g.add(tenonZ);
+        }
+
+        // 格肩榫
+        else if (type === '格肩榫') {
+            var beam1 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.4), woodMat);
+            beam1.position.set(-0.2, 0, 0);
+            beam1.userData = { name: '横材', desc: type + '：' + desc };
+            g.add(beam1);
+
+            var shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.4), darkWoodMat);
+            shoulder.position.set(0.2, 0, 0);
+            shoulder.rotation.y = Math.PI / 4;
+            shoulder.userData = { name: '格肩', desc: '45°斜面，分散应力' };
+            g.add(shoulder);
+
+            var beam2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), woodMat);
+            beam2.position.set(0.4, 0, 0);
+            beam2.userData = { name: '竖材', desc: type + '：' + desc };
+            g.add(beam2);
+
+            var mortise = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.36), darkWoodMat);
+            mortise.position.set(0.2, 0, 0);
+            mortise.rotation.y = Math.PI / 4;
+            mortise.userData = { name: '槽口', desc: '与格肩咬合，防开裂' };
+            g.add(mortise);
+
+            var pin = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8), grainMat);
+            pin.rotation.x = Math.PI / 2;
+            pin.position.set(0.3, 0, 0);
+            pin.userData = { name: '销钉', desc: '锁定格肩，防止松动' };
+            g.add(pin);
+        }
+
+        // 夹头榫
+        else if (type === '夹头榫') {
+            var apron = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.4), woodMat);
+            apron.position.set(-0.3, 0, 0);
+            apron.userData = { name: '牙条', desc: type + '：' + desc };
+            g.add(apron);
+
+            var leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), woodMat);
+            leg.position.set(0.4, -0.2, 0);
+            leg.userData = { name: '腿足', desc: type + '：' + desc };
+            g.add(leg);
+
+            var clamp = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.36), darkWoodMat);
+            clamp.position.set(0.2, 0, 0);
+            clamp.userData = { name: '夹槽', desc: '夹持牙条，增强稳定性' };
+            g.add(clamp);
+
+            var apronEnd = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.34), darkWoodMat);
+            apronEnd.position.set(0.2, 0, 0);
+            apronEnd.userData = { name: '牙条端头', desc: '嵌入夹槽，形成夹持' };
+            g.add(apronEnd);
+
+            var wedge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.28), grainMat);
+            wedge.position.set(0.3, 0.05, 0);
+            wedge.rotation.z = 0.1;
+            wedge.userData = { name: '楔子', desc: '锁紧夹槽，防止松动' };
+            g.add(wedge);
+        }
+
+        return g;
+    }
+
+    // 2. 斗拱模型构建
+    function buildDougongModel(type, layers) {
+        type = type || '平身科';
+        layers = Math.max(1, Math.min(15, parseInt(layers, 10) || 6));
+        var g = new THREE.Group();
+
+       const dougongMat = new THREE.MeshLambertMaterial({ 
+    color: 0x8B7355,
+    side: THREE.DoubleSide
+});
+const dougongDarkMat = new THREE.MeshLambertMaterial({ 
+    color: 0x6b5344,
+    side: THREE.DoubleSide
+});
+const dougongCapMat = new THREE.MeshLambertMaterial({ 
+    color: 0x9c7b5c,
+    side: THREE.DoubleSide
+});
+
+        var h = 0.16; // 每层高度
+        var scale = 1;
+        var isCorner = false;
+        var isColumn = false;
+
+        if (type === '柱头科') {
+            scale = 1.08;
+            isColumn = true;
+        } else if (type === '角科') {
+            scale = 1.15;
+            isCorner = true;
+        }
+
+        for (var tier = 0; tier < layers; tier++) {
+            var w = (0.54 - tier * 0.032) * scale;
+            var d = w * 0.92;
+            var base = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), tier % 2 === 0 ? dougongMat : dougongDarkMat);
+            base.position.y = tier * h + h / 2;
+            base.userData = { name: '斗', desc: DOUGONG_DESC['斗'] };
+            g.add(base);
+
+            if (tier < layers - 1) {
+                if (type === '平身科') {
+                    var gong = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, h * 0.85, d * 1.08), dougongDarkMat);
+                    gong.position.set(w * 0.28, tier * h + h * 0.95, 0);
+                    gong.userData = { name: '拱', desc: DOUGONG_DESC['拱'] };
+                    g.add(gong);
+                    var gong2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, h * 0.85, d * 1.08), dougongDarkMat);
+                    gong2.position.set(-w * 0.28, tier * h + h * 0.95, 0);
+                    gong2.userData = { name: '拱', desc: DOUGONG_DESC['拱'] };
+                    g.add(gong2);
+                }
+                else if (type === '柱头科') {
+                    var gong = new THREE.Mesh(new THREE.BoxGeometry(w * 0.42, h * 0.85, d * 1.08), dougongDarkMat);
+                    gong.position.set(w * 0.32, tier * h + h * 0.95, 0);
+                    gong.userData = { name: '拱', desc: DOUGONG_DESC['拱'] + '（柱头单侧）' };
+                    g.add(gong);
+                    var columnCap = new THREE.Mesh(new THREE.BoxGeometry(w * 0.2, h * 0.6, d * 0.8), dougongCapMat);
+                    columnCap.position.set(-w * 0.2, tier * h + h * 0.95, 0);
+                    columnCap.userData = { name: '柱顶斗', desc: '连接柱头与斗拱' };
+                    g.add(columnCap);
+                }
+                else if (type === '角科') {
+                    var gongX = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, h * 0.85, d * 1.08), dougongDarkMat);
+                    gongX.position.set(w * 0.28, tier * h + h * 0.95, 0);
+                    gongX.userData = { name: '正拱', desc: DOUGONG_DESC['拱'] };
+                    g.add(gongX);
+                    var gongX2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, h * 0.85, d * 1.08), dougongDarkMat);
+                    gongX2.position.set(-w * 0.28, tier * h + h * 0.95, 0);
+                    gongX2.userData = { name: '正拱', desc: DOUGONG_DESC['拱'] };
+                    g.add(gongX2);
+                    var gongZ = new THREE.Mesh(new THREE.BoxGeometry(d * 1.08, h * 0.85, w * 0.38), dougongDarkMat);
+                    gongZ.position.set(0, tier * h + h * 0.95, w * 0.28);
+                    gongZ.userData = { name: '侧拱', desc: DOUGONG_DESC['拱'] + '（角部侧出）' };
+                    g.add(gongZ);
+                    var gongZ2 = new THREE.Mesh(new THREE.BoxGeometry(d * 1.08, h * 0.85, w * 0.38), dougongDarkMat);
+                    gongZ2.position.set(0, tier * h + h * 0.95, -w * 0.28);
+                    gongZ2.userData = { name: '侧拱', desc: DOUGONG_DESC['拱'] + '（角部侧出）' };
+                    g.add(gongZ2);
+                }
+
+                if (type === '平身科' || type === '柱头科') {
+                    var ang = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, h * 0.7, d * 0.5), dougongCapMat);
+                    ang.position.set(w * 0.28, tier * h + h * 1.2, d * 0.35);
+                    ang.userData = { name: '昂', desc: DOUGONG_DESC['昂'] };
+                    g.add(ang);
+                    var ang2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, h * 0.7, d * 0.5), dougongCapMat);
+                    ang2.position.set(-w * 0.28, tier * h + h * 1.2, -d * 0.35);
+                    ang2.userData = { name: '昂', desc: DOUGONG_DESC['昂'] };
+                    g.add(ang2);
+                } else if (type === '角科') {
+                    var angX = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, h * 0.7, d * 0.5), dougongCapMat);
+                    angX.position.set(w * 0.28, tier * h + h * 1.2, d * 0.35);
+                    angX.userData = { name: '正昂', desc: DOUGONG_DESC['昂'] };
+                    g.add(angX);
+                    var angX2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, h * 0.7, d * 0.5), dougongCapMat);
+                    angX2.position.set(-w * 0.28, tier * h + h * 1.2, -d * 0.35);
+                    angX2.userData = { name: '正昂', desc: DOUGONG_DESC['昂'] };
+                    g.add(angX2);
+                    var angZ = new THREE.Mesh(new THREE.BoxGeometry(d * 0.5, h * 0.7, w * 0.32), dougongCapMat);
+                    angZ.position.set(d * 0.35, tier * h + h * 1.2, w * 0.28);
+                    angZ.userData = { name: '侧昂', desc: DOUGONG_DESC['昂'] + '（角部斜出）' };
+                    g.add(angZ);
+                    var angZ2 = new THREE.Mesh(new THREE.BoxGeometry(d * 0.5, h * 0.7, w * 0.32), dougongCapMat);
+                    angZ2.position.set(-d * 0.35, tier * h + h * 1.2, -w * 0.28);
+                    angZ2.userData = { name: '侧昂', desc: DOUGONG_DESC['昂'] + '（角部斜出）' };
+                    g.add(angZ2);
+                }
+            }
+        }
+
+        if (type === '角科') {
+            var cornerTop = new THREE.Mesh(new THREE.BoxGeometry(w * 0.4, h * 0.6, w * 0.4), dougongCapMat);
+            cornerTop.position.set(0, layers * h + h * 0.5, 0);
+            cornerTop.rotation.y = Math.PI / 4;
+            cornerTop.userData = { name: '角科顶斗', desc: '角部顶部斜向构件' };
+            g.add(cornerTop);
+        }
+
+        if (type === '柱头科') {
+            var columnBase = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, h * 0.8, d * 0.3), dougongCapMat);
+            columnBase.position.set(0, -h * 0.5, 0);
+            columnBase.userData = { name: '柱顶', desc: '连接柱头与斗拱底部' };
+            g.add(columnBase);
+        }
+
+        g.userData.layers = layers;
+        return g;
+    }
+
+    // 3. 拱券模型构建
+    function buildGongquanModel(variant) {
+        variant = variant || '敞肩拱';
+        var g = new THREE.Group();
+
+       const gongquanMat = new THREE.MeshLambertMaterial({ 
+    color: 0x8B7355,
+    side: THREE.DoubleSide
+});
+const gongquanDarkMat = new THREE.MeshLambertMaterial({ 
+    color: 0x6b5344,
+    side: THREE.DoubleSide
+});
+const gongquanLightMat = new THREE.MeshLambertMaterial({ 
+    color: 0x9c7b5c,
+    side: THREE.DoubleSide
+});
+        if (variant === '标准拱' || variant === '敞肩拱') {
+            var seg = 18;
+            for (var i = 0; i < seg; i++) {
+                var t = (i / seg) * Math.PI + 0.015;
+                var thick = i === Math.floor(seg / 2) ? 0.18 : 0.11;
+                
+                var boxGeometry = new THREE.BoxGeometry(0.2, thick, 0.48);
+                var box = new THREE.Mesh(boxGeometry, i === Math.floor(seg / 2) ? gongquanDarkMat : gongquanMat);
+                box.position.x = 0.78 * Math.cos(t);
+                box.position.y = 0.78 * Math.sin(t);
+                box.rotation.z = -t;
+                box.userData = { 
+                    name: i === Math.floor(seg / 2) ? '拱顶石' : '拱券石', 
+                    desc: GONGQUAN_DESC[i === Math.floor(seg / 2) ? '拱顶石' : '拱券石'] 
+                };
+                g.add(box);
+            }
+
+            var base1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.52), gongquanLightMat);
+            base1.position.set(-0.82, -0.58, 0);
+            base1.userData = { name: '桥台', desc: GONGQUAN_DESC['桥台'] };
+            g.add(base1);
+
+            var abut1 = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.5), gongquanLightMat);
+            abut1.position.set(-0.82, -0.32, 0);
+            abut1.userData = { name: '桥台', desc: GONGQUAN_DESC['桥台'] };
+            g.add(abut1);
+
+            var base2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.52), gongquanLightMat);
+            base2.position.set(0.82, -0.58, 0);
+            base2.userData = { name: '桥台', desc: GONGQUAN_DESC['桥台'] };
+            g.add(base2);
+
+            var abut2 = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.5), gongquanLightMat);
+            abut2.position.set(0.82, -0.32, 0);
+            abut2.userData = { name: '桥台', desc: GONGQUAN_DESC['桥台'] };
+            g.add(abut2);
+
+            if (variant === '敞肩拱') {
+                var smallArch1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.35), gongquanMat);
+                smallArch1.position.set(-0.42, -0.35, 0);
+                smallArch1.userData = { name: '敞肩小拱', desc: GONGQUAN_DESC['敞肩小拱'] };
+                g.add(smallArch1);
+
+                var smallArch2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.35), gongquanMat);
+                smallArch2.position.set(0.42, -0.35, 0);
+                smallArch2.userData = { name: '敞肩小拱', desc: GONGQUAN_DESC['敞肩小拱'] };
+                g.add(smallArch2);
+            }
+        }
+
+        return g;
+    }
+
+    // ====================== 3D渲染核心变量 ======================
+    var overlay = document.getElementById('viewer3d-overlay');
+    var canvasWrap = document.getElementById('viewer3d-canvas-wrap');
+    var titleEl = document.getElementById('viewer3d-title');
+    var disassembleBtn = document.getElementById('viewer3d-disassemble');
+    var resetBtn = document.getElementById('viewer3d-reset');
+    var closeBtn = document.getElementById('viewer3d-close');
+
+    var scene, camera, renderer, meshGroup, animating = false, assembled = true;
+    var animationFrameId = null;
+
+    var currentStructure = '';
+    var currentSunmaoType = '燕尾榫';
+    var currentDougongType = '平身科';
+    var currentDougongLayers = 6;
+    var currentGongquanVariant = '敞肩拱';
+    var currentBuilding = null;
+    var miniMap = null;
+    var dougongCharts = { heat: null, line: null, bar: null };
+
+    var isDrag = false, prevX, prevY, theta = 0, phi = 0, radius = 4;
+    var raycaster = new THREE.Raycaster();
+    var mouse = new THREE.Vector2();
+
+    // ====================== 辅助函数 ======================
+    function disposeModel(group) {
+        if (!group) return;
+        group.traverse(function (obj) {
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (Array.isArray(obj.material)) obj.material.forEach(function (m) { m.dispose(); });
+                else obj.material.dispose();
+            }
+        });
+        if (group.parent) group.parent.remove(group);
+    }
+
+    function createScene(structure, opts) {
+        opts = opts || {};
+        if (opts.sunmaoType) currentSunmaoType = opts.sunmaoType;
+        if (opts.dougongType) currentDougongType = opts.dougongType;
+        if (opts.dougongLayers) currentDougongLayers = Math.max(1, Math.min(15, opts.dougongLayers));
+        if (opts.gongquanVariant) currentGongquanVariant = opts.gongquanVariant;
+        if (opts.building) currentBuilding = opts.building;
+        currentStructure = structure || currentStructure;
+
+        var oldGroup = meshGroup;
+        if (scene && oldGroup) {
+            scene.remove(oldGroup);
+            disposeModel(oldGroup);
+        }
+
+        if (!scene) {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f1419);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+            var light1 = new THREE.DirectionalLight(0xffffff, 1.25);
+            light1.position.set(10, 10, 12);
+            scene.add(light1);
+            var light2 = new THREE.DirectionalLight(0xffffff, 0.7);
+            light2.position.set(-8, 6, 10);
+            scene.add(light2);
+            var light3 = new THREE.DirectionalLight(0xe8eeff, 0.5);
+            light3.position.set(0, -8, 8);
+            scene.add(light3);
+            var light4 = new THREE.DirectionalLight(0xffffff, 0.4);
+            light4.position.set(0, 0, 15);
+            scene.add(light4);
+            camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+        }
+
+        camera.position.set(0, 0, 4);
+        camera.lookAt(0, 0, 0);
+        radius = 4;
+        theta = 0;
+        phi = 0;
+
+        if (currentStructure === '榫卯') meshGroup = buildSunmaoModel(currentSunmaoType);
+        else if (currentStructure === '斗拱') meshGroup = buildDougongModel(currentDougongType, currentDougongLayers);
+        else meshGroup = buildGongquanModel(currentGongquanVariant);
+
+               meshGroup.position.set(0, 0, 0);
+        scene.add(meshGroup);
+        // 强制更新所有模型的材质，确保纹理生效
+        meshGroup.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.needsUpdate = true;
+            }
+        });
+        assembled = true;
+    }
+
+    function storeInitialPositions() {
+        if (!meshGroup) return;
+        meshGroup.userData.initialPositions = meshGroup.children.map(function (c) { return c.position.clone(); });
+    }
+
+    function animateDisassemble() {
+        if (!meshGroup || animating) return;
+        animating = true;
+        assembled = false;
+        var children = meshGroup.children;
+        var targets = children.map(function (c) {
+            return {
+                pos: c.position.clone(),
+                posOff: new THREE.Vector3((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5)
+            };
+        });
+        var start = performance.now();
+        function tick() {
+            var t = (performance.now() - start) / 600;
+            if (t >= 1) {
+                for (var i = 0; i < children.length; i++) children[i].position.copy(targets[i].posOff);
+                animating = false;
+                return;
+            }
+            for (var i = 0; i < children.length; i++) {
+                children[i].position.lerpVectors(targets[i].pos, targets[i].posOff, t);
+            }
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function animateReset() {
+        if (!meshGroup || animating) return;
+        if (!meshGroup.userData.initialPositions) {
+            assembled = true;
+            return;
+        }
+        animating = true;
+        var children = meshGroup.children;
+        var startPos = children.map(function (c) { return c.position.clone(); });
+        var endPos = meshGroup.userData.initialPositions;
+        var start = performance.now();
+        function tick() {
+            var t = (performance.now() - start) / 500;
+            if (t >= 1) {
+                for (var i = 0; i < children.length; i++) children[i].position.copy(endPos[i]);
+                assembled = true;
+                animating = false;
+                return;
+            }
+            for (var i = 0; i < children.length; i++) {
+                children[i].position.lerpVectors(startPos[i], endPos[i], t);
+            }
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function showTypeBarAndPanel() {
+        var typeBar = document.getElementById('viewer3d-type-bar');
+        var bottomPanel = document.getElementById('viewer3d-bottom-panel');
+        var comparePanel = document.getElementById('viewer3d-compare-panel');
+        if (comparePanel) comparePanel.style.display = 'none';
+        if (!typeBar || !bottomPanel) return;
+        typeBar.style.display = 'none';
+        typeBar.innerHTML = '';
+        bottomPanel.style.display = 'none';
+        bottomPanel.innerHTML = '';
+
+        if (currentStructure === '榫卯') {
+            typeBar.style.display = 'flex';
+            typeBar.innerHTML = '<label>榫卯类型</label>';
+            ['燕尾榫', '透榫', '搭掌榫', '粽角榫', '格肩榫', '夹头榫'].forEach(function (t) {
+                var btn = document.createElement('button');
+                btn.className = 'viewer3d-type-btn' + (t === currentSunmaoType ? ' active' : '');
+                btn.textContent = t;
+                btn.onclick = function () { 
+                    currentSunmaoType = t; 
+                    createScene('榫卯'); 
+                    storeInitialPositions(); 
+                    showTypeBarAndPanel(); 
+                };
+                typeBar.appendChild(btn);
+            });
+
+            var comparePanel = document.getElementById('viewer3d-compare-panel');
+            if (comparePanel) {
+                comparePanel.style.display = 'block';
+                var rows = SUNMAO_SIX.map(function (r) {
+                    return '<tr><td>' + r.name + '</td><td>' + r.morph + '</td><td>' + r.mechanics + '</td><td>' + r.scene + '</td><td>' + r.history + '</td></tr>';
+                }).join('');
+                comparePanel.innerHTML = '<h4>六种榫卯特点与区别</h4><table class="viewer3d-compare-table"><thead><tr><th>类型</th><th>结构形态</th><th>力学性能</th><th>适用场景</th><th>历史演变</th></tr></thead><tbody>' + rows + '</tbody></table>';
+            }
+
+            bottomPanel.style.display = 'block';
+            bottomPanel.innerHTML = '<div class="viewer3d-minimap-card"><h4>典型建筑分布（榫卯）</h4><div id="viewer3d-minimap"></div></div>';
+            initSunmaoMinimap();
+        } else if (currentStructure === '斗拱') {
+            typeBar.style.display = 'flex';
+            typeBar.innerHTML = '<label>斗拱类型</label>';
+            ['柱头科', '平身科', '角科'].forEach(function (t) {
+                var btn = document.createElement('button');
+                btn.className = 'viewer3d-type-btn' + (t === currentDougongType ? ' active' : '');
+                btn.textContent = t;
+                btn.onclick = function () { 
+                    currentDougongType = t; 
+                    createScene('斗拱'); 
+                    storeInitialPositions(); 
+                    showTypeBarAndPanel(); 
+                };
+                typeBar.appendChild(btn);
+            });
+
+            var sliderWrap = document.createElement('div');
+            sliderWrap.className = 'viewer3d-slider-wrap';
+            sliderWrap.innerHTML = '<label>层数</label><input type="range" id="viewer3d-layers" min="1" max="15" value="' + currentDougongLayers + '"><span id="viewer3d-layers-val">' + currentDougongLayers + '</span> 跳';
+            typeBar.appendChild(sliderWrap);
+
+            var layerInput = document.getElementById('viewer3d-layers');
+            if (layerInput) layerInput.oninput = function () {
+                currentDougongLayers = parseInt(this.value, 10);
+                document.getElementById('viewer3d-layers-val').textContent = currentDougongLayers;
+                createScene('斗拱'); 
+                storeInitialPositions();
+                renderDougongCharts();
+            };
+
+            bottomPanel.style.display = 'block';
+            bottomPanel.innerHTML = '<div class="viewer3d-charts-row"><div class="viewer3d-chart-box"><h4>承重分布（层数）</h4><canvas id="dg-heat"></canvas></div><div class="viewer3d-chart-box"><h4>层数 vs 承重能力</h4><canvas id="dg-line"></canvas></div></div>';
+            renderDougongCharts();
+        } else if (currentStructure === '拱券') {
+            typeBar.style.display = 'flex';
+            typeBar.innerHTML = '<label>拱型</label>';
+            ['标准拱', '敞肩拱'].forEach(function (v) {
+                var btn = document.createElement('button');
+                btn.className = 'viewer3d-type-btn' + (v === currentGongquanVariant ? ' active' : '');
+                btn.textContent = v;
+                btn.onclick = function () { 
+                    currentGongquanVariant = v; 
+                    createScene('拱券'); 
+                    storeInitialPositions(); 
+                    showTypeBarAndPanel(); 
+                };
+                typeBar.appendChild(btn);
+            });
+        }
+    }
+
+    function initSunmaoMinimap() {
+        var el = document.getElementById('viewer3d-minimap');
+        if (!el || !window.L) return;
+        var list = (typeof DATA !== 'undefined' && DATA.buildings) ? DATA.buildings.filter(function (b) { return b.structure === '榫卯'; }) : [];
+        if (miniMap) try { miniMap.remove(); } catch (e) {}
+        miniMap = L.map('viewer3d-minimap', { center: [35, 105], zoom: 4, zoomControl: false }).setView([35, 105], 4);
+        L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { attribution: '', opacity: 0.7 }).addTo(miniMap);
+        list.forEach(function (b) {
+            var isCurrent = currentBuilding && Math.abs(b.lat - currentBuilding.lat) < 0.01 && Math.abs(b.lng - currentBuilding.lng) < 0.01;
+            var m = L.circleMarker([b.lat, b.lng], {
+                radius: isCurrent ? 10 : 6,
+                fillColor: isCurrent ? '#BF7E4A' : '#997A5B',
+                color: '#fff',
+                weight: isCurrent ? 3 : 1,
+                fillOpacity: 0.9
+            }).addTo(miniMap);
+            m.bindTooltip('<b>' + b.name + '</b><br/>' + b.province + ' · ' + b.dynasty, { direction: 'top', className: 'viewer3d-minimap-tooltip' });
+        });
+    }
+
+    function renderDougongCharts() {
+        if (currentStructure !== '斗拱' || typeof Chart === 'undefined') return;
+        var heatEl = document.getElementById('dg-heat');
+        var lineEl = document.getElementById('dg-line');
+        if (!heatEl || !lineEl) return;
+
+        var layers = currentDougongLayers;
+        var loadByLayer = [];
+        for (var i = 1; i <= 15; i++) loadByLayer.push(Math.min(100, 40 + i * 4 + (i * i) * 0.3));
+
+        if (dougongCharts.heat) dougongCharts.heat.destroy();
+        dougongCharts.heat = new Chart(heatEl, {
+            type: 'bar',
+            data: {
+                labels: Array.from({ length: 15 }, function (_, i) { return (i + 1) + '跳'; }),
+                datasets: [{ label: '承重占比', data: loadByLayer.slice(0, 15), backgroundColor: 'rgba(80,118,142,0.7)' }]
+            },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        if (dougongCharts.line) dougongCharts.line.destroy();
+        dougongCharts.line = new Chart(lineEl, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: 15 }, function (_, i) { return i + 1; }),
+                datasets: [{ label: '承重能力', data: loadByLayer, borderColor: '#50768E', fill: true, tension: 0.3 }]
+            },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // ====================== 事件处理 ======================
+    function onPointerDown(e) {
+        isDrag = true;
+        prevX = e.clientX;
+        prevY = e.clientY;
+    }
+
+    function onPointerMove(e) {
+        if (isDrag && camera) {
+            theta += (e.clientX - prevX) * 0.01;
+            phi += (e.clientY - prevY) * 0.01;
+            phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, phi));
+            prevX = e.clientX;
+            prevY = e.clientY;
+            camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+            camera.position.y = radius * Math.cos(phi);
+            camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+            camera.lookAt(0, 0, 0);
+        }
+
+        if (!meshGroup || !camera || !renderer) return;
+        var rect = renderer.domElement.getBoundingClientRect();
+        var inCanvas = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+        if (!inCanvas) {
+            var tt = document.getElementById('viewer3d-tooltip');
+            if (tt) tt.style.display = 'none';
+            return;
+        }
+
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        var hits = raycaster.intersectObjects(meshGroup.children, true);
+        var tt = document.getElementById('viewer3d-tooltip');
+        if (hits.length && hits[0].object.userData && hits[0].object.userData.name) {
+            var ud = hits[0].object.userData;
+            if (tt) {
+                tt.innerHTML = '<div class="tt-name">' + ud.name + '</div><div class="tt-desc">' + (ud.desc || '') + '</div>';
+                tt.style.display = 'block';
+                tt.style.left = (e.clientX + 14) + 'px';
+                tt.style.top = (e.clientY + 14) + 'px';
+            }
+        } else if (tt) tt.style.display = 'none';
+    }
+
+    function onPointerUp() { isDrag = false; }
+
+    function onWheel(e) {
+        e.preventDefault();
+        if (!camera) return;
+        radius = Math.max(1.5, Math.min(8, radius + e.deltaY * 0.002));
+        camera.position.normalize().multiplyScalar(radius);
+    }
+
+    function render() {
+        if (!renderer || !scene || !camera) return;
+        renderer.render(scene, camera);
+    }
+
+    function resizeRenderer() {
+        if (!renderer || !camera) return;
+        var w = canvasWrap.offsetWidth;
+        var h = canvasWrap.offsetHeight;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        render();
+    }
+
+    function loop() {
+        if (overlay.style.display === 'none') {
+            animationFrameId = null;
+            return;
+        }
+        render();
+        animationFrameId = requestAnimationFrame(loop);
+    }
+
+    function closeViewer3d() {
+        if (animationFrameId != null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        overlay.style.display = 'none';
+    }
+
+    // ====================== 暴露全局接口 ======================
+    window.openViewer3d = function (structure, options) {
+        options = options || {};
+        structure = structure || '榫卯';
+        if (options.building) currentBuilding = options.building;
+        if (animationFrameId != null) cancelAnimationFrame(animationFrameId);
+        overlay.style.display = 'flex';
+        titleEl.textContent = (structure || '结构') + ' 3D 模型';
+
+        if (!renderer) {
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio || 1);
+            canvasWrap.appendChild(renderer.domElement);
+            renderer.domElement.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
+            // 兼容不支持 passive 选项的浏览器
+            try {
+                renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+            } catch (e) {
+                renderer.domElement.addEventListener('wheel', onWheel);
+            }
+            window.addEventListener('resize', resizeRenderer);
+        }
+
+        createScene(structure, options);
+        storeInitialPositions();
+        showTypeBarAndPanel();
+        resizeRenderer();
+        loop();
+    };
+
+    if (disassembleBtn) {
+        disassembleBtn.addEventListener('click', function () {
+            if (assembled) animateDisassemble();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+            if (!assembled) animateReset();
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            closeViewer3d();
+        });
+    }
+})();
+
+        // ====================== 建筑统计模块交互 ======================
+        function initStatsToggle() {
+            var statsEl = document.querySelector('.stats');
+            var totalCard = document.getElementById('stat-total-card');
+            if (!statsEl || !totalCard) return;
+
+            // 进入页面时为总数卡片添加展开动画
+            setTimeout(function () {
+                statsEl.classList.add('stats-anim-ready');
+            }, 150);
+
+            // 点击总数卡片时整体向左滑出 / 滑回
+            totalCard.addEventListener('click', function () {
+                statsEl.classList.toggle('stats-expanded');
+            });
+        }
+
+        // ====================== 页面加载 ======================
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            initTimeline();
+            initCharts();
+            renderSunmaoTypes();
+            renderDougongTable();
+            renderGongquanTable();
+            renderBuildingList();
+            initStatsToggle();
+            
+            // 每30秒刷新趣味知识
+            setInterval(refreshFunFact, 30000);
+        });
+    </script>
+    
+    <!-- 粒子效果简化版 -->
+    <script>
+    (function() {
+        const canvas = document.getElementById('particleCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth, height = 200;
+        canvas.width = width; canvas.height = height;
+        
+        const particles = [];
+        for (let i = 0; i < 50; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2 + 1,
+                speedX: Math.random() * 0.5 - 0.25,
+                speedY: Math.random() * 0.2 + 0.1
+            });
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(255,255,240,0.3)';
+            
+            particles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                if (p.y > height) p.y = 0;
+                if (p.x > width) p.x = 0;
+                if (p.x < 0) p.x = width;
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+        
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            canvas.width = width;
+        });
+    })();
+    </script>
+    
+   <!-- 悬浮聊天组件：开始 -->
+<style>
+/* 悬浮聊天 - 样式（简约雅致，配合古建筑配色） */
+.floating-chat-wrap { position: fixed; right: 24px; bottom: 28px; z-index: 1200; font-family: 'Noto Serif SC', serif; }
+.fc-btn { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, rgba(200,160,120,0.95), rgba(180,130,90,0.95)); box-shadow: 0 6px 18px rgba(30,30,30,0.25); display:flex; align-items:center; justify-content:center; cursor:pointer; border: 2px solid rgba(255,255,255,0.06); transition: all 0.3s ease; }
+.fc-btn:hover { transform: translateY(-3px); }
+.fc-icon { width: 38px; height: 38px; display:block; }
+
+.fc-panel { width: 360px; max-width: calc(100vw - 48px); height: 520px; background: linear-gradient(180deg, #fcf8f1, #f6efe3); border-radius: 14px; box-shadow: 0 18px 40px rgba(30,30,30,0.28); overflow: hidden; margin-bottom: 12px; display: none; flex-direction: column; border: 1px solid rgba(140,110,80,0.12); }
+.fc-panel.open { display: flex; }
+.fc-header { padding: 12px 14px; background: linear-gradient(90deg, rgba(56,90,96,0.06), rgba(200,160,120,0.06)); display:flex; align-items:center; gap:10px; border-bottom: 1px solid rgba(140,110,80,0.06); }
+.fc-header .title { font-weight:700; color: var(--gu-daiqing); font-size: 15px; }
+.fc-header .sub { font-size:12px; color:var(--gu-shiqing); }
+.fc-close { margin-left:auto; background:transparent; border:none; cursor:pointer; font-size:18px; color:var(--gu-zhusha); }
+
+.fc-messages { padding: 12px; overflow-y: auto; flex:1; display:flex; flex-direction:column; gap:10px; }
+.fc-message { max-width:78%; padding:10px 12px; border-radius:10px; line-height:1.45; font-size:14px; box-shadow: 0 4px 8px rgba(30,30,30,0.06); }
+.fc-message.user { align-self:flex-end; background: linear-gradient(135deg,#fff7ea,#f6e9d4); border:1px solid rgba(140,110,80,0.06); }
+.fc-message.bot { align-self:flex-start; background: linear-gradient(135deg,#eef6f6,#e6efed); border:1px solid rgba(80,120,140,0.06); }
+.fc-typing { font-style:italic; color:var(--gu-shiqing); }
+
+.fc-input-area { padding: 10px; border-top: 1px solid rgba(140,110,80,0.06); display:flex; gap:8px; align-items:center; }
+.fc-input { flex:1; min-height:44px; max-height:120px; padding:10px 12px; border-radius:10px; border:1px solid rgba(140,110,80,0.08); background: #fff; resize: none; font-size:14px; color:#333; font-family: inherit; }
+.fc-send { background: var(--gu-zhusha); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; font-family: inherit; transition: background 0.2s ease; }
+.fc-send:hover { background: #a84430; }
+.fc-send:disabled { background: #ccc; cursor: not-allowed; }
+
+/* 快捷提问按钮样式 */
+.fc-quick-questions { padding: 0 12px 10px; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid rgba(140,110,80,0.06); padding-top: 10px; }
+.fc-quick-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(140,110,80,0.2); background: #fff; font-size: 12px; cursor: pointer; color: var(--gu-daiqing); font-family: inherit; transition: all 0.2s ease; }
+.fc-quick-btn:hover { background: var(--gu-daiqing); color: #fff; border-color: var(--gu-daiqing); }
+
+/* 小屏微调 */
+@media (max-width:420px){ .fc-panel{ right:12px; bottom: 84px; width:92%; height:60vh; } .floating-chat-wrap{ right:12px; bottom:18px;} }
+</style>
+
+<div class="floating-chat-wrap" id="floatingChat">
+    <div id="fcPanel" class="fc-panel" aria-hidden="true">
+        <div class="fc-header">
+            <div style="display:flex;align-items:center;gap:10px">
+                <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="10" fill="#F5EEE1"/><path d="M12 30v-8h24v8" stroke="#B47A48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 18v-4h16v4" stroke="#B47A48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div>
+                    <div class="title">古建小助手</div>
+                    <div class="sub">可询问关于榫卯与古建筑的问题</div>
+                </div>
+            </div>
+            <button class="fc-close" id="fcClose" title="收起">✕</button>
+        </div>
+        <div class="fc-messages" id="fcMessages" aria-live="polite"></div>
+        <!-- 快捷提问区域 -->
+        <div class="fc-quick-questions" id="fcQuickQuestions">
+            <button class="fc-quick-btn" data-question="什么是榫卯结构？">什么是榫卯结构？</button>
+            <button class="fc-quick-btn" data-question="斗拱的作用是什么？">斗拱的作用是什么？</button>
+            <button class="fc-quick-btn" data-question="赵州桥的结构特点">赵州桥的结构特点</button>
+            <button class="fc-quick-btn" data-question="唐宋建筑的区别">唐宋建筑的区别</button>
+        </div>
+        <div class="fc-input-area">
+            <textarea id="fcInput" class="fc-input" placeholder="请输入您的问题，按回车发送（Shift+Enter 换行）"></textarea>
+            <button id="fcSend" class="fc-send">发送</button>
+        </div>
+    </div>
+
+    <div class="fc-btn" id="fcToggle" title="聊天">
+        <svg class="fc-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="30" fill="#EFE6D8" stroke="#C29A6B" stroke-width="2"/>
+            <path d="M18 34c4-6 10-6 14-2s10 6 14 2" stroke="#A36F43" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <rect x="22" y="18" width="20" height="6" rx="2" fill="#C29A6B"/>
+        </svg>
+    </div>
+</div>
+
+<!-- 粒子效果适配版（动态匹配header高度） -->
+<script>
+(function() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const headerEl = document.querySelector('.header');
+    // 动态获取header高度，不再写死200px
+    let width = window.innerWidth;
+    let height = headerEl.offsetHeight;
+    canvas.width = width; 
+    canvas.height = height;
+    
+    // 粒子数量适配更高的区域
+    const particles = [];
+    for (let i = 0; i < 80; i++) {
+        particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 2 + 1,
+            speedX: Math.random() * 0.5 - 0.25,
+            speedY: Math.random() * 0.2 + 0.1
+        });
+    }
+    
+    // 粒子动画循环
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = 'rgba(255,255,240,0.3)';
+        
+        particles.forEach(p => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            if (p.y > height) p.y = 0;
+            if (p.x > width) p.x = 0;
+            if (p.x < 0) p.x = width;
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+    }
+    animate();
+    
+    // 窗口大小变化时同步更新
+    window.addEventListener('resize', () => {
+        width = window.innerWidth;
+        height = headerEl.offsetHeight;
+        canvas.width = width;
+        canvas.height = height;
+    });
+})();
+</script>
+
+
+<!-- 头部左右翻页轮播控制JS -->
+<script>
+// 轮播逻辑完全独立，不影响页面原有地图、3D模型、时间轴等功能
+document.addEventListener('DOMContentLoaded', function() {
+    // 轮播核心元素获取
+    const carouselTrack = document.querySelector('.header-carousel-track');
+    const slides = document.querySelectorAll('.header-carousel-slide');
+    const prevBtn = document.querySelector('.carousel-prev');
+    const nextBtn = document.querySelector('.carousel-next');
+    const indicatorsContainer = document.querySelector('.carousel-indicators');
+    
+    // 轮播配置（可自行调整）
+    let currentIndex = 0;
+    const slideCount = slides.length;
+    const autoPlayInterval = 5000; // 自动轮播间隔，单位ms（5000=5秒）
+    let autoPlayTimer = null;
+
+    // 1. 生成底部指示器小圆点
+    function initIndicators() {
+        indicatorsContainer.innerHTML = '';
+        for (let i = 0; i < slideCount; i++) {
+            const dot = document.createElement('button');
+            dot.className = `indicator-dot ${i === currentIndex ? 'active' : ''}`;
+            dot.setAttribute('aria-label', `切换到第${i+1}张壁纸`);
+            dot.dataset.index = i;
+            indicatorsContainer.appendChild(dot);
+        }
+    }
+
+    // 2. 核心翻页函数
+    function goToSlide(index) {
+        // 边界循环处理
+        if (index < 0) index = slideCount - 1;
+        if (index >= slideCount) index = 0;
+        
+        currentIndex = index;
+        // 移动轨道实现翻页
+        carouselTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
+        
+        // 更新指示器激活状态
+        document.querySelectorAll('.indicator-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === currentIndex);
+        });
+
+        // 翻页后重置自动轮播
+        resetAutoPlay();
+    }
+
+    // 3. 上一张/下一张
+    function prevSlide() { goToSlide(currentIndex - 1); }
+    function nextSlide() { goToSlide(currentIndex + 1); }
+
+    // 4. 自动轮播控制
+    function startAutoPlay() {
+        autoPlayTimer = setInterval(nextSlide, autoPlayInterval);
+    }
+    function resetAutoPlay() {
+        clearInterval(autoPlayTimer);
+        startAutoPlay();
+    }
+    function stopAutoPlay() {
+        clearInterval(autoPlayTimer);
+    }
+
+    // 5. 绑定所有交互事件
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+    // 指示器点击切换
+    indicatorsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('indicator-dot')) {
+            goToSlide(parseInt(e.target.dataset.index));
+        }
+    });
+    // 鼠标悬浮暂停轮播，离开继续
+    const carouselContainer = document.querySelector('.header-carousel');
+    carouselContainer.addEventListener('mouseenter', stopAutoPlay);
+    carouselContainer.addEventListener('mouseleave', startAutoPlay);
+    // 键盘左右键快捷切换
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') prevSlide();
+        if (e.key === 'ArrowRight') nextSlide();
+    });
+
+    // 初始化轮播
+    initIndicators();
+    startAutoPlay();
+});
+</script>
+
+<script>
+// 古建小助手 核心交互逻辑
+document.addEventListener('DOMContentLoaded', function() {
+    // ========== 核心配置 ==========
+    // 后端接口地址，必须和server.js的端口保持一致
+    const API_URL = '/api/ai-chat';
+    // AI系统提示词，限定回答范围贴合网站主题
+    const SYSTEM_PROMPT = `你是中国古代建筑专业助手，专注于榫卯、斗拱、拱券、中国古建筑历史、结构力学、营造法式相关的知识解答。
+1. 仅回答和中国古代建筑、古建筑结构、古建筑历史相关的问题，无关问题请礼貌拒绝，引导用户提问古建筑相关内容。
+2. 回答通俗易懂、专业准确，贴合古建科普定位，简洁明了不超过300字，除非用户要求详细讲解。`;
+
+    // ========== DOM元素获取 ==========
+    const fcToggle = document.getElementById('fcToggle');
+    const fcPanel = document.getElementById('fcPanel');
+    const fcClose = document.getElementById('fcClose');
+    const fcInput = document.getElementById('fcInput');
+    const fcSend = document.getElementById('fcSend');
+    const fcMessages = document.getElementById('fcMessages');
+    const fcQuickQuestions = document.getElementById('fcQuickQuestions');
+
+    // 对话历史记录
+    let messageHistory = [];
+
+    // ========== 1. 聊天面板展开/收起 ==========
+    // 点击悬浮按钮展开
+    fcToggle.addEventListener('click', function() {
+        fcPanel.classList.toggle('open');
+        fcPanel.setAttribute('aria-hidden', !fcPanel.classList.contains('open'));
+        // 展开后自动聚焦输入框
+        if (fcPanel.classList.contains('open')) fcInput.focus();
+    });
+
+    // 点击关闭按钮收起
+    fcClose.addEventListener('click', function() {
+        fcPanel.classList.remove('open');
+        fcPanel.setAttribute('aria-hidden', 'true');
+    });
+
+    // ========== 2. 消息渲染函数 ==========
+    function renderMessage(role, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `fc-message ${role}`;
+        messageDiv.textContent = content;
+        fcMessages.appendChild(messageDiv);
+        // 自动滚动到最新消息
+        fcMessages.scrollTop = fcMessages.scrollHeight;
+    }
+
+    // ========== 3. 发送消息核心逻辑 ==========
+    async function sendMessage(content) {
+        const trimContent = content.trim();
+        if (!trimContent) return;
+
+        // 渲染用户消息
+        renderMessage('user', trimContent);
+        fcInput.value = '';
+        // 禁用按钮防止重复提交
+        fcSend.disabled = true;
+        fcInput.disabled = true;
+
+        // 加入对话历史
+        messageHistory.push({ role: 'user', content: trimContent });
+
+        // 渲染AI加载状态
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'fc-message bot fc-typing';
+        typingDiv.textContent = '正在思考中...';
+        fcMessages.appendChild(typingDiv);
+        fcMessages.scrollTop = fcMessages.scrollHeight;
+
+        try {
+            // 调用后端AI接口
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        ...messageHistory
+                    ]
+                })
+            });
+
+            // 移除加载状态
+            typingDiv.remove();
+
+            if (!response.ok) throw new Error('接口请求失败，请检查后端服务是否启动');
+
+            const data = await response.json();
+            // 提取AI回复内容
+            const aiReply = data.output?.choices?.[0]?.message?.content || '抱歉，我暂时无法回答这个问题，请稍后再试。';
+            
+            // 渲染AI回复并加入历史
+            renderMessage('bot', aiReply);
+            messageHistory.push({ role: 'assistant', content: aiReply });
+
+        } catch (error) {
+            // 错误处理
+            typingDiv.remove();
+            renderMessage('bot', `出错了：${error.message}，请检查后端服务是否已启动、API地址是否正确。`);
+            console.error('AI请求错误：', error);
+        } finally {
+            // 恢复按钮状态
+            fcSend.disabled = false;
+            fcInput.disabled = false;
+            fcInput.focus();
+        }
+    }
+
+    // ========== 4. 点击发送按钮 ==========
+    fcSend.addEventListener('click', function() {
+        sendMessage(fcInput.value);
+    });
+
+    // ========== 5. 回车发送/Shift+Enter换行 ==========
+    fcInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // 阻止默认换行
+            sendMessage(fcInput.value);
+        }
+    });
+
+    // ========== 6. 快捷提问按钮点击 ==========
+    fcQuickQuestions.addEventListener('click', function(e) {
+        if (e.target.classList.contains('fc-quick-btn')) {
+            sendMessage(e.target.dataset.question);
+        }
+    });
+});
+</script>
+
+<script>
+// ========== 知识问答模块逻辑 - 新增开始 ==========
+// 题库配置（可自行扩展题目数量）
+const QUIZ_QUESTIONS = [
+    {
+        id: 1,
+        question: "中国现存古建筑中，斗拱层数最多的建筑是？",
+        options: [
+            { text: "北京故宫太和殿", isCorrect: true },
+            { text: "沈阳故宫大政殿", isCorrect: false },
+            { text: "天坛祈年殿", isCorrect: false },
+            { text: "颐和园仁寿殿", isCorrect: false }
+        ],
+        analysis: "故宫太和殿的斗拱共有11踩，是现存古建筑中斗拱层数最多的，体现了清代官式建筑的最高规制。"
+    },
+    {
+        id: 2,
+        question: "世界上现存最早的敞肩石拱桥是？",
+        options: [
+            { text: "卢沟桥", isCorrect: false },
+            { text: "赵州桥（安济桥）", isCorrect: true },
+            { text: "宝带桥", isCorrect: false },
+            { text: "洛阳桥", isCorrect: false }
+        ],
+        analysis: "赵州桥由隋代李春建造，其敞肩拱设计比欧洲早了1200年，是世界桥梁史上的经典之作。"
+    },
+    {
+        id: 3,
+        question: "榫卯结构最早起源于哪个文化时期？",
+        options: [
+            { text: "仰韶文化", isCorrect: false },
+            { text: "龙山文化", isCorrect: false },
+            { text: "河姆渡文化", isCorrect: true },
+            { text: "良渚文化", isCorrect: false }
+        ],
+        analysis: "榫卯结构起源于距今约7000年前的河姆渡文化时期，是中国古代木构建筑的核心技术。"
+    },
+    {
+        id: 4,
+        question: "宋代官方建筑规范典籍《营造法式》的编修者是？",
+        options: [
+            { text: "宇文恺", isCorrect: false },
+            { text: "李诫", isCorrect: true },
+            { text: "蒯祥", isCorrect: false },
+            { text: "样式雷", isCorrect: false }
+        ],
+        analysis: "《营造法式》由北宋将作监李诫编修，是中国古代最完整的建筑技术典籍，确立了材份制的规范体系。"
+    },
+    {
+        id: 5,
+        question: "斗拱在古建筑中，最核心的原始功能是？",
+        options: [
+            { text: "装饰美观", isCorrect: false },
+            { text: "体现建筑等级", isCorrect: false },
+            { text: "传递荷载、抗震缓冲", isCorrect: true },
+            { text: "延长出檐距离", isCorrect: false }
+        ],
+        analysis: "斗拱最核心的原始功能是将屋顶的荷载逐层传递到立柱，同时通过层层叠加的结构实现抗震缓冲，唐代斗拱以结构功能为主，清代逐渐演变为装饰性构件。"
+    }
+];
+
+// 全局状态
+let currentQuizIndex = 0;
+let isAnswered = false;
+
+// 1. 展开/收起答题面板
+function toggleQuizPanel() {
+    const panel = document.getElementById('quizPanel');
+    const toggleText = document.getElementById('quizToggle');
+    const isOpen = panel.style.display !== 'none';
+    
+    if (isOpen) {
+        panel.style.display = 'none';
+        toggleText.textContent = '点击展开答题 ↓';
+    } else {
+        panel.style.display = 'block';
+        toggleText.textContent = '点击收起 ↑';
+        // 首次展开自动加载第一题
+        if (!document.getElementById('quizQuestion').textContent) {
+            renderQuestion(currentQuizIndex);
+        }
+    }
+}
+
+// 2. 渲染题目
+function renderQuestion(index) {
+    const question = QUIZ_QUESTIONS[index];
+    if (!question) return;
+
+    // 重置状态
+    isAnswered = false;
+    document.getElementById('quizResult').style.display = 'none';
+    
+    // 渲染题目
+    document.getElementById('quizQuestion').textContent = `${index + 1}. ${question.question}`;
+    
+    // 渲染选项
+    const optionsContainer = document.getElementById('quizOptions');
+    optionsContainer.innerHTML = question.options.map((opt, optIndex) => `
+        <div class="quiz-option" data-index="${optIndex}" onclick="selectOption(${optIndex})">
+            ${String.fromCharCode(65 + optIndex)}. ${opt.text}
+        </div>
+    `).join('');
+
+    // 更新按钮状态
+    document.getElementById('quizPrev').disabled = index === 0;
+    document.getElementById('quizNext').disabled = index === QUIZ_QUESTIONS.length - 1;
+}
+
+// 3. 选择选项判断对错
+function selectOption(optIndex) {
+    if (isAnswered) return;
+    isAnswered = true;
+
+    const currentQuestion = QUIZ_QUESTIONS[currentQuizIndex];
+    const options = document.querySelectorAll('.quiz-option');
+    const resultContainer = document.getElementById('quizResult');
+
+    // 标记对错
+    options.forEach((opt, i) => {
+        opt.classList.add('answered');
+        if (currentQuestion.options[i].isCorrect) {
+            opt.classList.add('correct');
+        }
+        if (i === optIndex && !currentQuestion.options[i].isCorrect) {
+            opt.classList.add('wrong');
+        }
+    });
+
+    // 显示解析
+    resultContainer.innerHTML = `<strong>解析：</strong>${currentQuestion.analysis}`;
+    resultContainer.style.display = 'block';
+}
+
+// 4. 切换上一题/下一题
+function switchQuestion(direction) {
+    currentQuizIndex += direction;
+    renderQuestion(currentQuizIndex);
+}
+
+// 5. 随机抽题
+function randomQuestion() {
+    const randomIndex = Math.floor(Math.random() * QUIZ_QUESTIONS.length);
+    currentQuizIndex = randomIndex;
+    renderQuestion(currentQuizIndex);
+}
+// ========== 知识问答模块逻辑 - 新增结束 ==========
+</script>
+<!-- 悬浮聊天组件：结束 -->
+<script>
+// 插入浮动提示逻辑：针对应力柱子显示浅灰色小字提示框
+(function(){
+    const tip = document.createElement('div');
+    tip.className = 'float-tip';
+    document.body.appendChild(tip);
+
+    const tips = {
+        // 榫卯 应力柱
+        'stress-node': '节点：横材与竖材的连接核心区域。',
+        'stress-tenon': '榫头：凸出的部分，插入卯眼中传递力。',
+        'stress-mortise': '卯眼：凹入的槽口，容纳榫头。',
+        // 斗拱 应力柱
+        'dg-stress-arch': '拱：斗拱中横向的弓形构件，承托上部荷载。',
+        'dg-stress-dou': '斗：方形垫块，承托拱和昂，传递力。',
+        'dg-stress-ang': '昂：斜向伸出的杠杆构件，起平衡和挑出作用。',
+        // 拱券 应力柱
+        'gq-stress-arch': '拱券：主要受力的弧形结构，将荷载转化为对两侧的推力。',
+        'gq-stress-abut': '桥台：承受拱券水平推力的支撑结构，保证整体稳定。'
+    };
+
+    Object.keys(tips).forEach(function(id){
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('mouseenter', function(e){
+            tip.textContent = tips[id];
+            tip.style.display = 'block';
+            tip.style.left = (e.clientX + 12) + 'px';
+            tip.style.top = (e.clientY + 12) + 'px';
+        });
+        el.addEventListener('mousemove', function(e){
+            tip.style.left = (e.clientX + 12) + 'px';
+            tip.style.top = (e.clientY + 12) + 'px';
+        });
+        el.addEventListener('mouseleave', function(){
+            tip.style.display = 'none';
+        });
+    });
+})();
+</script>
+</body>
+</html>
