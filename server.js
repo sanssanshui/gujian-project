@@ -117,12 +117,13 @@ app.use('*', (req, res) => {
 });
 
 // 关键：仅本地环境启动监听，Vercel环境直接导出app（适配Serverless）
-if (!process.env.VERCEL) {
+// 关键：仅本地环境启动监听，Vercel 环境不启动端口监听
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`✅ 服务已成功启动！`);
     console.log(`🌐 本地访问地址：http://localhost:${PORT}`);
   });
-} else {
-  // Vercel Serverless 必须导出app
-  module.exports = app;
 }
+
+// 全局导出 Express 实例，适配 Vercel Serverless
+module.exports = app;
